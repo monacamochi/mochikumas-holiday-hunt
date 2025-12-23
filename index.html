@@ -196,12 +196,12 @@ const endDodge = (e) => {
 dodgeBtn.addEventListener('touchstart', startDodge, {passive: false});
 dodgeBtn.addEventListener('touchend', endDodge, {passive: false});
 dodgeBtn.addEventListener('mousedown', startDodge);
-dodgeBtn.addEventListener('mouseup', endDodge);
+// 画面のどこで離しても状態がリセットされるようにwindow全体で監視
+window.addEventListener('mouseup', endDodge);
 
 startBtn.addEventListener('click', () => { if(state.canStart) startSequence(); });
 
 function startSequence() {
-  // 音量を20%に設定
   bgm.volume = 0.2; 
   bgm.currentTime = 0;
   bgm.play().catch(e => console.log("再生失敗:", e));
@@ -223,7 +223,12 @@ function startSequence() {
 function initGame() {
   if (spawnTimer) clearTimeout(spawnTimer);
   document.querySelectorAll('.obj').forEach(o => o.remove());
+  
+  // バグ修正点：ゲーム開始時に回避状態を強制リセット
   state = { ...state, score: 0, life: 3, active: true, dodging: false, speed: 6, canStart: false };
+  mk.classList.remove('dodging'); 
+  setMochikumaImage(IMAGES.NORMAL);
+  
   scoreDisp.innerText = `SCORE: 0`;
   updateLife();
   spawn();
