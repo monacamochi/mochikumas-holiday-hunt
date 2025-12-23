@@ -5,43 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>もちくま、避ける。</title>
   <style>
+    /* 基本スタイル設定 */
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { background: #fff; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; }
     #game-wrap { width: 100vw; height: 100vh; position: relative; background: #fafafa; display: flex; flex-direction: column; }
     #status { height: 60px; display: flex; justify-content: space-around; align-items: center; font-weight: bold; color: #666; background: #fff; border-bottom: 1px solid #eee; z-index: 10; }
     #life { color: #ff6b6b; }
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
+    
+    /* もちくま本体 */
     #mochikuma {
       width: 120px; height: 120px; position: absolute; bottom: 40px; left: 50%;
-      transform: translate3d(-50%, 0, 0); background-size: contain; background-repeat: no-repeat;
-      background-position: center; transition: transform 0.1s ease-out; z-index: 5; will-change: transform;
+      transform: translate3d(-50%, 0, 0); /* GPU加速を有効にする記述 */
+      background-size: contain; background-repeat: no-repeat;
+      background-position: center; 
+      transition: transform 0.08s ease-out; /* 動きを少しキビキビさせる */
+      z-index: 5; will-change: transform;
     }
+    /* 避けた時の位置 */
     #mochikuma.dodging { transform: translate3d(50%, 0, 0); }
+    
     #countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #555; z-index: 15; }
+    
+    /* 落ちてくるオブジェクト */
     .obj { position: absolute; left: 50%; top: 0; padding: 10px 20px; border-radius: 8px; font-weight: bold; white-space: nowrap; z-index: 4; transform: translate3d(-50%, -100px, 0); will-change: transform; }
     .job { background: #555; color: #fff; }
     .rest { background: #ffeb3b; color: #333; }
+    
+    /* UI周り */
     #ui-area { height: 140px; display: flex; align-items: center; justify-content: center; background: #fff; border-top: 1px solid #eee; z-index: 10; }
     #dodge-btn { width: 80%; height: 70px; font-size: 1.5rem; font-weight: bold; background: #eee; border: 2px solid #ccc; border-radius: 15px; color: #555; outline: none; }
-    #msg-layer, #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; justify-content: center; align-items: flex-start; padding-top: 60px; z-index: 20; }
-    #msg-content, #rule-content { text-align: center; padding: 25px; background: #fff; border: 1px solid #eee; border-radius: 12px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    
+    /* メッセージレイヤー（ロード画面・メニュー含む） */
+    #msg-layer, #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,1); /* 背景を完全に白くして裏を見せない */ display: flex; justify-content: center; align-items: center; z-index: 20; }
+    #msg-content, #rule-content { text-align: center; padding: 30px; background: #fff; width: 90%; }
     #msg-text { font-size: 1.3rem; font-weight: bold; margin-bottom: 20px; color: #444; }
     #start-btn, #rule-btn, #close-rule-btn { padding: 12px 25px; margin: 8px; font-size: 1rem; font-weight: bold; border-radius: 10px; border: 1px solid #ccc; background: #fff; }
     #start-btn { background: #eee; }
-    #loading-text { font-weight: bold; color: #aaa; padding: 30px; }
-
-    /* 【追加】ブラウザに画像を事前に認識させるための隠し要素 */
-    .preload-images { position: absolute; width: 0; height: 0; overflow: hidden; z-index: -1; }
+    #loading-text { font-size: 1.2rem; font-weight: bold; color: #666; letter-spacing: 0.05em; }
   </style>
 </head>
 <body>
-<div class="preload-images">
-  <img src="https://www.dropbox.com/scl/fi/gbx2wrt5bha180w2ijt5x/.png?rlkey=gp94iamo9ynne2nmayuzabg9g&raw=1">
-  <img src="https://www.dropbox.com/scl/fi/7ta2gvz0lm5aieejh85f8/.png?rlkey=4c7iwsjkmrt9tshsdllvyyoih&raw=1">
-  <img src="https://www.dropbox.com/scl/fi/2p4c3vse6bora2td4rzbg/.png?rlkey=zvhcdn1i7wfr4nb3akrupjbl6&raw=1">
-  <img src="https://www.dropbox.com/scl/fi/0nb6a5d1mc6ymjxze2sdc/.png?rlkey=opewycm3h88ri2w86mlhgi432&raw=1">
-</div>
-
 <div id="game-wrap">
   <div id="status">
     <div id="score">SCORE: 0</div>
@@ -51,9 +55,11 @@
     <div id="mochikuma"></div>
     <div id="countdown" style="display: none;"></div>
   </div>
+  
   <div id="msg-layer">
     <div id="msg-content">
-      <div id="loading-text">Now loading...</div>
+      <div id="loading-text">読み込み中...<br><span style="font-size:0.8rem;">(少し時間がかかります)</span></div>
+      
       <div id="menu-area" style="display: none;">
         <p id="msg-text">もちくま、避ける。</p>
         <button id="start-btn">開始</button>
@@ -61,26 +67,41 @@
       </div>
     </div>
   </div>
+
   <div id="rule-layer" style="display: none;">
     <div id="rule-content">
       <h3>【ルール】</h3>
-      <p>・仕事は避ける。休みは取る。</p>
-      <p>・ボタン長押しで右へ移動。</p>
+      <p style="text-align:left; margin:15px 0; line-height:1.6;">
+        ・落ちてくる「仕事」を避ける<br>
+        ・「休み」は当たって取る<br>
+        ・ボタン長押しで右へ移動<br>
+        ・ライフが0になると終了
+      </p>
       <button id="close-rule-btn">閉じる</button>
     </div>
   </div>
+
   <div id="ui-area">
     <button id="dodge-btn">右へ避ける</button>
   </div>
 </div>
 
 <script>
+// 要素の取得
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
+const ruleLayer = document.getElementById('rule-layer');
 const loadingText = document.getElementById('loading-text');
 const menuArea = document.getElementById('menu-area');
+const startBtn = document.getElementById('start-btn');
+const ruleBtn = document.getElementById('rule-btn');
+const closeRuleBtn = document.getElementById('close-rule-btn');
+const scoreDisp = document.getElementById('score');
+const lifeDisp = document.getElementById('life');
+const msgText = document.getElementById('msg-text');
 
+// 画像URLリスト
 const IMAGES = {
   NORMAL: 'https://www.dropbox.com/scl/fi/gbx2wrt5bha180w2ijt5x/.png?rlkey=gp94iamo9ynne2nmayuzabg9g&raw=1',
   DODGE:  'https://www.dropbox.com/scl/fi/7ta2gvz0lm5aieejh85f8/.png?rlkey=4c7iwsjkmrt9tshsdllvyyoih&raw=1',
@@ -90,33 +111,54 @@ const IMAGES = {
 
 let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: false };
 
-// 画像読み込み完了をチェック
-function checkImages() {
-  const imgs = document.querySelectorAll('.preload-images img');
+// --- 【重要】画像を裏側で確実に読み込む処理 ---
+function preloadImages() {
+  const urls = Object.values(IMAGES);
   let loadedCount = 0;
-  imgs.forEach(img => {
-    if (img.complete) {
+  
+  // 全ての画像に対して「読み込み開始」の命令を出す
+  urls.forEach(url => {
+    const img = new Image();
+    // 読み込み成功時も失敗時も、とにかく「終わった」とカウントする
+    img.onload = img.onerror = () => {
       loadedCount++;
-    } else {
-      img.onload = () => {
-        loadedCount++;
-        if (loadedCount === imgs.length) showMenu();
-      };
-    }
+      // 全ての画像の読み込みが終わったら、メニューを表示する
+      if (loadedCount === urls.length) {
+        showMenu();
+      }
+    };
+    img.src = url; // 読み込み開始
   });
-  if (loadedCount === imgs.length) showMenu();
 }
 
+// 読み込み完了後に実行される関数
 function showMenu() {
-  loadingText.style.display = 'none';
-  menuArea.style.display = 'block';
-  state.canStart = true;
-  mk.style.backgroundImage = `url('${IMAGES.NORMAL}')`;
+  // 少し待ってから表示を切り替える（チラつき防止）
+  setTimeout(() => {
+    loadingText.style.display = 'none'; // 「読み込み中」を消す
+    menuArea.style.display = 'block';   // 「開始」ボタンなどを出す
+    state.canStart = true;              // ゲーム開始を許可する
+    mk.style.backgroundImage = `url('${IMAGES.NORMAL}')`; // もちくまを表示させる
+  }, 500);
 }
 
-checkImages();
+// ページを開いたらすぐに読み込みを開始
+preloadImages();
+// -------------------------------------------
 
-// --- 以下、ゲームロジック（基本変わらず） ---
+// ボタンイベントの設定
+ruleBtn.addEventListener('click', () => ruleLayer.style.display = 'flex');
+closeRuleBtn.addEventListener('click', () => ruleLayer.style.display = 'none');
+
+startBtn.addEventListener('click', () => {
+  if(state.canStart) {
+    msgLayer.style.display = 'none';
+    state.active = true;
+    initGame();
+  }
+});
+
+// ゲームロジック（操作・判定など）
 const startDodge = (e) => { 
   if (e.cancelable) e.preventDefault();
   if(!state.active) return; 
@@ -132,19 +174,15 @@ const endDodge = (e) => {
 
 dodgeBtn.addEventListener('touchstart', startDodge, {passive: false});
 dodgeBtn.addEventListener('touchend', endDodge);
-document.getElementById('start-btn').addEventListener('click', () => {
-  if(state.canStart) {
-    msgLayer.style.display = 'none';
-    state.active = true;
-    initGame();
-  }
-});
 
 function initGame() {
   state.score = 0;
   state.life = 3;
-  document.getElementById('score').innerText = 'SCORE: 0';
-  document.getElementById('life').innerText = 'LIFE: ❤❤❤';
+  state.speed = 6;
+  scoreDisp.innerText = 'SCORE: 0';
+  lifeDisp.innerText = 'LIFE: ❤❤❤';
+  mk.style.backgroundImage = `url('${IMAGES.NORMAL}')`;
+  document.querySelectorAll('.obj').forEach(o => o.remove());
   spawn();
 }
 
@@ -170,20 +208,35 @@ function spawn() {
         if(isJob) { 
           state.active = false;
           mk.style.backgroundImage = `url('${IMAGES.HIT_JOB}')`;
-          document.getElementById('msg-text').innerText = '仕事に捕まった…';
+          msgText.innerHTML = `仕事に捕まった…<br>SCORE: ${state.score}`;
+          menuArea.style.display = 'block';
           msgLayer.style.display = 'flex';
           clearInterval(loop);
         } else {
           state.score += 10;
-          document.getElementById('score').innerText = `SCORE: ${state.score}`;
+          scoreDisp.innerText = `SCORE: ${state.score}`;
           obj.remove();
           clearInterval(loop);
         }
       }
     }
-    if(posY > 1000) { clearInterval(loop); obj.remove(); }
+    if(posY > document.getElementById('game-field').clientHeight + 50) { 
+      if(!isJob && !state.dodging) {
+          state.life--;
+          lifeDisp.innerText = `LIFE: ${'❤'.repeat(state.life)}${'♡'.repeat(3 - state.life)}`;
+          if(state.life <= 0) {
+            state.active = false;
+            mk.style.backgroundImage = `url('${IMAGES.HIT_REST}')`;
+            msgText.innerHTML = `休みが足りない…<br>SCORE: ${state.score}`;
+            menuArea.style.display = 'block';
+            msgLayer.style.display = 'flex';
+            clearInterval(loop);
+          }
+      }
+      obj.remove(); clearInterval(loop); 
+    }
   }, 16);
-  setTimeout(spawn, 1500);
+  setTimeout(spawn, Math.max(1500 - (state.score * 5), 600));
 }
 </script>
 </body>
