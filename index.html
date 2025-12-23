@@ -7,136 +7,131 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { background: #fff; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; }
-    #game-wrap { width: 100vw; height: 100vh; position: relative; background: #fafafa; display: flex; flex-direction: column; }
-    #status { height: 60px; display: flex; justify-content: space-around; align-items: center; font-weight: bold; color: #666; background: #fff; border-bottom: 1px solid #eee; z-index: 10; }
-    #life { color: #ff6b6b; }
-    #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
     
-    /* もちくまコンテナ（移動用） */
-    #mochikuma-container {
+    /* レイアウト構成：上（ステータス）中（ゲーム）下（操作ボタン） */
+    #game-wrap { width: 100vw; height: 100vh; position: relative; background: #fafafa; display: flex; flex-direction: column; }
+    
+    /* 1. 上部ステータスバー（常に表示） */
+    #status { height: 60px; display: flex; justify-content: space-around; align-items: center; font-weight: bold; color: #666; background: #fff; border-bottom: 1px solid #eee; z-index: 30; }
+    #life { color: #ff6b6b; }
+    
+    /* 2. 中央ゲームフィールド */
+    #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; z-index: 5; }
+    
+    /* もちくまコンテナ */
+    #mochikuma-wrap {
       width: 120px; height: 120px; position: absolute; bottom: 40px; left: 50%;
       transform: translate3d(-50%, 0, 0);
       transition: transform 0.08s ease-out;
-      z-index: 5; will-change: transform;
+      z-index: 10; will-change: transform;
     }
-    #mochikuma-container.dodging { transform: translate3d(50%, 0, 0); }
+    #mochikuma-wrap.dodging { transform: translate3d(50%, 0, 0); }
     
-    /* 各ポーズのレイヤー（すべて重ねて配置） */
-    .mk-layer {
+    /* 画像を実体(img)として重ねる：背景画像よりスマホで安定します */
+    .mk-img {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background-size: contain; background-repeat: no-repeat; background-position: center;
-      opacity: 0; /* 最初はすべて透明 */
-      transition: opacity 0.01s; /* 切り替えを瞬時に */
+      object-fit: contain;
+      display: none; /* 基本は消しておく */
     }
-    /* 現在の状態だけを表示 */
-    .active { opacity: 1 !important; }
+    .active { display: block !important; } /* activeクラスがついたものだけ表示 */
 
-    #countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #555; z-index: 15; }
-    .obj { position: absolute; left: 50%; top: 0; padding: 10px 20px; border-radius: 8px; font-weight: bold; white-space: nowrap; z-index: 4; transform: translate3d(-50%, -100px, 0); will-change: transform; }
+    /* 落ちてくるオブジェクト */
+    .obj { position: absolute; left: 50%; top: 0; padding: 10px 20px; border-radius: 8px; font-weight: bold; white-space: nowrap; z-index: 8; transform: translate3d(-50%, -100px, 0); will-change: transform; }
     .job { background: #555; color: #fff; }
     .rest { background: #ffeb3b; color: #333; }
-    #ui-area { height: 140px; display: flex; align-items: center; justify-content: center; background: #fff; border-top: 1px solid #eee; z-index: 10; }
+    
+    /* 3. 下部操作エリア */
+    #ui-area { height: 140px; display: flex; align-items: center; justify-content: center; background: #fff; border-top: 1px solid #eee; z-index: 30; }
     #dodge-btn { width: 80%; height: 70px; font-size: 1.5rem; font-weight: bold; background: #eee; border: 2px solid #ccc; border-radius: 15px; color: #555; outline: none; }
-    #msg-layer, #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center; z-index: 20; }
-    #msg-content, #rule-content { text-align: center; padding: 30px; width: 90%; }
-    #start-btn, #rule-btn, #close-rule-btn { padding: 12px 25px; margin: 8px; font-size: 1rem; font-weight: bold; border-radius: 10px; border: 1px solid #ccc; background: #fff; }
-    #loading-text { font-size: 1.2rem; font-weight: bold; color: #666; }
+    
+    /* ポップアップメッセージ（スコアを隠さないよう中央に配置） */
+    #msg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 50; background: rgba(0,0,0,0.05); }
+    #msg-content { text-align: center; padding: 25px; background: #fff; border-radius: 15px; width: 85%; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+    #msg-text { font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; color: #444; line-height: 1.5; }
+    #start-btn, #rule-btn { padding: 12px 25px; margin: 5px; font-size: 1rem; font-weight: bold; border-radius: 10px; border: 1px solid #ccc; background: #eee; }
+    
+    #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center; z-index: 100; }
   </style>
 </head>
 <body>
+
+<div id="loading-screen">読み込み中...</div>
+
 <div id="game-wrap">
   <div id="status">
     <div id="score">SCORE: 0</div>
     <div id="life">LIFE: ❤❤❤</div>
   </div>
+
   <div id="game-field">
-    <div id="mochikuma-container">
-      <div id="img-normal" class="mk-layer"></div>
-      <div id="img-dodge" class="mk-layer"></div>
-      <div id="img-hit-job" class="mk-layer"></div>
-      <div id="img-hit-rest" class="mk-layer"></div>
+    <div id="mochikuma-wrap">
+      <img id="m-normal" class="mk-img active" src="https://www.dropbox.com/scl/fi/gbx2wrt5bha180w2ijt5x/.png?rlkey=gp94iamo9ynne2nmayuzabg9g&raw=1">
+      <img id="m-dodge" class="mk-img" src="https://www.dropbox.com/scl/fi/7ta2gvz0lm5aieejh85f8/.png?rlkey=4c7iwsjkmrt9tshsdllvyyoih&raw=1">
+      <img id="m-job" class="mk-img" src="https://www.dropbox.com/scl/fi/2p4c3vse6bora2td4rzbg/.png?rlkey=zvhcdn1i7wfr4nb3akrupjbl6&raw=1">
+      <img id="m-rest" class="mk-img" src="https://www.dropbox.com/scl/fi/0nb6a5d1mc6ymjxze2sdc/.png?rlkey=opewycm3h88ri2w86mlhgi432&raw=1">
     </div>
-    <div id="countdown" style="display: none;"></div>
   </div>
-  
+
   <div id="msg-layer">
     <div id="msg-content">
-      <div id="loading-text">Now loading...</div>
-      <div id="menu-area" style="display: none;">
-        <p id="msg-text" style="font-weight:bold; font-size:1.3rem; margin-bottom:20px;">もちくま、避ける。</p>
-        <button id="start-btn">開始</button>
-        <button id="rule-btn">ルール</button>
-      </div>
+      <p id="msg-text">もちくま、避ける。</p>
+      <button id="start-btn">開始</button>
+      <button id="rule-btn">ルール</button>
     </div>
   </div>
 
-  <div id="rule-layer" style="display: none;">
-    <div id="rule-content">
-      <h3>【ルール】</h3>
-      <p style="text-align:left; margin:15px 0;">・仕事を避けて休みを取る</p>
-      <button id="close-rule-btn">閉じる</button>
-    </div>
+  <div id="ui-area">
+    <button id="dodge-btn">右へ避ける</button>
   </div>
-
-  <div id="ui-area"><button id="dodge-btn">右へ避ける</button></div>
 </div>
 
 <script>
-const container = document.getElementById('mochikuma-container');
-const layers = {
-  normal: document.getElementById('img-normal'),
-  dodge: document.getElementById('img-dodge'),
-  job: document.getElementById('img-hit-job'),
-  rest: document.getElementById('img-hit-rest')
+const wrap = document.getElementById('mochikuma-wrap');
+const imgs = {
+  normal: document.getElementById('m-normal'),
+  dodge: document.getElementById('m-dodge'),
+  job: document.getElementById('m-job'),
+  rest: document.getElementById('m-rest')
 };
-
-const IMAGES = {
-  normal: 'https://www.dropbox.com/scl/fi/gbx2wrt5bha180w2ijt5x/.png?rlkey=gp94iamo9ynne2nmayuzabg9g&raw=1',
-  dodge:  'https://www.dropbox.com/scl/fi/7ta2gvz0lm5aieejh85f8/.png?rlkey=4c7iwsjkmrt9tshsdllvyyoih&raw=1',
-  job: 'https://www.dropbox.com/scl/fi/2p4c3vse6bora2td4rzbg/.png?rlkey=zvhcdn1i7wfr4nb3akrupjbl6&raw=1',
-  rest: 'https://www.dropbox.com/scl/fi/0nb6a5d1mc6ymjxze2sdc/.png?rlkey=opewycm3h88ri2w86mlhgi432&raw=1'
-};
+const msgLayer = document.getElementById('msg-layer');
+const msgText = document.getElementById('msg-text');
+const scoreDisp = document.getElementById('score');
+const lifeDisp = document.getElementById('life');
 
 let state = { score: 0, life: 3, active: false, dodging: false, speed: 6 };
 
-// 画像をレイヤーにセットし、全ロードを待つ
-async function initImages() {
-  const promises = Object.keys(IMAGES).map(key => {
-    return new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => {
-        layers[key].style.backgroundImage = `url('${IMAGES[key]}')`;
-        resolve();
-      };
-      img.src = IMAGES[key];
-    });
+// 画像をセットし、ロード完了を確認
+function init() {
+  const allImgs = document.querySelectorAll('.mk-img');
+  let loaded = 0;
+  allImgs.forEach(img => {
+    if (img.complete) loaded++;
+    else img.onload = () => { loaded++; if(loaded === 4) hideLoader(); };
   });
-  await Promise.all(promises);
-  document.getElementById('loading-text').style.display = 'none';
-  document.getElementById('menu-area').style.display = 'block';
-  setPose('normal');
+  if (loaded === 4) hideLoader();
 }
-
-// ポーズ切り替え関数（透明度を操る）
-function setPose(poseKey) {
-  Object.values(layers).forEach(l => l.classList.remove('active'));
-  layers[poseKey].classList.add('active');
+function hideLoader() {
+  document.getElementById('loading-screen').style.display = 'none';
 }
+init();
 
-initImages();
+function setPose(key) {
+  Object.values(imgs).forEach(i => i.classList.remove('active'));
+  imgs[key].classList.add('active');
+}
 
 // 操作
-const startDodge = (e) => { 
+const startDodge = (e) => {
   if (e.cancelable) e.preventDefault();
-  if(!state.active) return;
+  if (!state.active) return;
   state.dodging = true;
-  container.classList.add('dodging');
+  wrap.classList.add('dodging');
   setPose('dodge');
 };
-const endDodge = (e) => { 
+const endDodge = (e) => {
   state.dodging = false;
-  container.classList.remove('dodging');
-  if(state.active) setPose('normal');
+  wrap.classList.remove('dodging');
+  if (state.active) setPose('normal');
 };
 
 const btn = document.getElementById('dodge-btn');
@@ -144,15 +139,15 @@ btn.addEventListener('touchstart', startDodge, {passive: false});
 btn.addEventListener('touchend', endDodge);
 
 document.getElementById('start-btn').addEventListener('click', () => {
-  document.getElementById('msg-layer').style.display = 'none';
+  msgLayer.style.display = 'none';
   state.active = true;
   initGame();
 });
 
 function initGame() {
-  state.score = 0; state.life = 3;
-  document.getElementById('score').innerText = 'SCORE: 0';
-  document.getElementById('life').innerText = 'LIFE: ❤❤❤';
+  state.score = 0; state.life = 3; state.speed = 6;
+  scoreDisp.innerText = 'SCORE: 0';
+  lifeDisp.innerText = 'LIFE: ❤❤❤';
   setPose('normal');
   spawn();
 }
@@ -172,19 +167,20 @@ function spawn() {
     obj.style.transform = `translate3d(-50%, ${posY}px, 0)`;
 
     const objRect = obj.getBoundingClientRect();
-    const mkRect = container.getBoundingClientRect();
+    const mkRect = wrap.getBoundingClientRect();
 
     if(objRect.bottom > mkRect.top && objRect.top < mkRect.bottom) {
       if(!state.dodging) {
         if(isJob) { 
           state.active = false;
           setPose('job');
-          document.getElementById('msg-text').innerHTML = `仕事に捕まった…<br>SCORE: ${state.score}`;
-          document.getElementById('msg-layer').style.display = 'flex';
+          msgText.innerHTML = `仕事に捕まった…<br>SCORE: ${state.score}`;
+          msgLayer.style.display = 'flex';
           clearInterval(loop);
         } else {
           state.score += 10;
-          document.getElementById('score').innerText = `SCORE: ${state.score}`;
+          scoreDisp.innerText = `SCORE: ${state.score}`;
+          if(state.score % 50 === 0) state.speed += 0.5;
           obj.remove(); clearInterval(loop);
         }
       }
@@ -192,23 +188,24 @@ function spawn() {
     if(posY > 1000) {
       if(!isJob && !state.dodging) {
         state.life--;
-        document.getElementById('life').innerText = `LIFE: ${'❤'.repeat(state.life)}${'♡'.repeat(3-state.life)}`;
+        lifeDisp.innerText = `LIFE: ${'❤'.repeat(Math.max(0, state.life))}${'♡'.repeat(Math.max(0, 3-state.life))}`;
         if(state.life <= 0) {
           state.active = false;
           setPose('rest');
-          document.getElementById('msg-text').innerHTML = `休みが足りない…<br>SCORE: ${state.score}`;
-          document.getElementById('msg-layer').style.display = 'flex';
+          msgText.innerHTML = `休みが足りない…<br>SCORE: ${state.score}`;
+          msgLayer.style.display = 'flex';
           clearInterval(loop);
         }
       }
       obj.remove(); clearInterval(loop);
     }
   }, 16);
-  setTimeout(spawn, 1500);
+  setTimeout(spawn, Math.max(1500 - (state.score * 5), 600));
 }
 
-document.getElementById('rule-btn').addEventListener('click', () => document.getElementById('rule-layer').style.display = 'flex');
-document.getElementById('close-rule-btn').addEventListener('click', () => document.getElementById('rule-layer').style.display = 'none');
+document.getElementById('rule-btn').addEventListener('click', () => {
+  alert("・仕事は避ける\n・休みは体で取る\n・ボタン長押しで右へ回避");
+});
 </script>
 </body>
 </html>
