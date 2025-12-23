@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>もちくま、避ける。</title>
   <style>
-    /* CSSはここ */
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { background: #fff; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; }
     #game-wrap { width: 100vw; height: 100vh; position: relative; background: #fafafa; display: flex; flex-direction: column; }
@@ -24,11 +23,11 @@
     .rest { background: #ffeb3b; color: #333; }
     #ui-area { height: 140px; display: flex; align-items: center; justify-content: center; background: #fff; border-top: 1px solid #eee; z-index: 10; }
     #dodge-btn { width: 80%; height: 70px; font-size: 1.5rem; font-weight: bold; background: #eee; border: 2px solid #ccc; border-radius: 15px; color: #555; outline: none; -webkit-touch-callout: none; }
-    #msg-layer, #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 60px; z-index: 20; }
+    #msg-layer, #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(250,250,250,0.8); display: flex; justify-content: center; align-items: flex-start; padding-top: 60px; z-index: 20; }
     #msg-content, #rule-content { text-align: center; padding: 25px; background: #fff; border: 1px solid #eee; border-radius: 12px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
     #msg-text { font-size: 1.3rem; font-weight: bold; margin-bottom: 20px; color: #444; }
     #start-btn, #rule-btn, #close-rule-btn { padding: 12px 25px; margin: 8px; font-size: 1rem; font-weight: bold; border-radius: 10px; border: 1px solid #ccc; background: #fff; }
-    #start-btn { background: #eee; }
+    #start-btn { background: #eee; cursor: pointer; }
     #rule-content p { font-size: 0.95rem; margin-bottom: 10px; text-align: left; line-height: 1.5; color: #444; }
     #loading-text { font-weight: bold; color: #aaa; padding: 30px; letter-spacing: 0.05em; }
   </style>
@@ -71,7 +70,6 @@
 </div>
 
 <script>
-// JavaScriptはここ
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
@@ -93,27 +91,33 @@ const IMAGES = {
   HIT_REST: 'https://www.dropbox.com/scl/fi/0nb6a5d1mc6ymjxze2sdc/.png?rlkey=opewycm3h88ri2w86mlhgi432&st=zjqo8ok5&raw=1'
 };
 
-let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: true };
+let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: false };
 let spawnTimer = null;
 
-function preloadAllImages(imageObj, callback) {
-  const urls = Object.values(imageObj);
-  let loadedCount = 0;
-  urls.forEach(url => {
-    const img = new Image();
-    img.onload = () => { loadedCount++; if (loadedCount === urls.length) callback(); };
-    img.onerror = () => { loadedCount++; if (loadedCount === urls.length) callback(); };
-    img.src = url;
+// 画像の完全読み込みを待つ関数
+function preloadImages(imageObj) {
+  const promises = Object.entries(imageObj).map(([key, url]) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ key, url });
+      img.onerror = () => resolve({ key, url }); // エラー時も進行させる
+      img.src = url;
+    });
   });
+  return Promise.all(promises);
 }
 
-preloadAllImages(IMAGES, () => {
+// 読み込み完了後の処理
+preloadImages(IMAGES).then(() => {
   loadingText.style.display = 'none';
   menuArea.style.display = 'block';
+  state.canStart = true;
   setMochikumaImage(IMAGES.NORMAL);
 });
 
-function setMochikumaImage(url) { mk.style.backgroundImage = `url('${url}')`; }
+function setMochikumaImage(url) { 
+  mk.style.backgroundImage = `url('${url}')`; 
+}
 
 ruleBtn.addEventListener('click', () => ruleLayer.style.display = 'flex');
 closeRuleBtn.addEventListener('click', () => ruleLayer.style.display = 'none');
@@ -157,7 +161,7 @@ function startSequence() {
 function initGame() {
   if (spawnTimer) clearTimeout(spawnTimer);
   document.querySelectorAll('.obj').forEach(o => o.remove());
-  state = { score: 0, life: 3, active: true, dodging: false, speed: 6, canStart: false };
+  state = { ...state, score: 0, life: 3, active: true, dodging: false, speed: 6 };
   scoreDisp.innerText = `SCORE: 0`;
   updateLife();
   spawn();
