@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>もちくま、避ける。</title>
   <style>
-    /* 基本スタイル設定 */
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { background: #fff; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; }
     #game-wrap { width: 100vw; height: 100vh; position: relative; background: #fafafa; display: flex; flex-direction: column; }
@@ -13,36 +12,35 @@
     #life { color: #ff6b6b; }
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
     
-    /* もちくま本体 */
-    #mochikuma {
+    /* もちくまコンテナ（移動用） */
+    #mochikuma-container {
       width: 120px; height: 120px; position: absolute; bottom: 40px; left: 50%;
-      transform: translate3d(-50%, 0, 0); /* GPU加速を有効にする記述 */
-      background-size: contain; background-repeat: no-repeat;
-      background-position: center; 
-      transition: transform 0.08s ease-out; /* 動きを少しキビキビさせる */
+      transform: translate3d(-50%, 0, 0);
+      transition: transform 0.08s ease-out;
       z-index: 5; will-change: transform;
     }
-    /* 避けた時の位置 */
-    #mochikuma.dodging { transform: translate3d(50%, 0, 0); }
+    #mochikuma-container.dodging { transform: translate3d(50%, 0, 0); }
     
+    /* 各ポーズのレイヤー（すべて重ねて配置） */
+    .mk-layer {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background-size: contain; background-repeat: no-repeat; background-position: center;
+      opacity: 0; /* 最初はすべて透明 */
+      transition: opacity 0.01s; /* 切り替えを瞬時に */
+    }
+    /* 現在の状態だけを表示 */
+    .active { opacity: 1 !important; }
+
     #countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #555; z-index: 15; }
-    
-    /* 落ちてくるオブジェクト */
     .obj { position: absolute; left: 50%; top: 0; padding: 10px 20px; border-radius: 8px; font-weight: bold; white-space: nowrap; z-index: 4; transform: translate3d(-50%, -100px, 0); will-change: transform; }
     .job { background: #555; color: #fff; }
     .rest { background: #ffeb3b; color: #333; }
-    
-    /* UI周り */
     #ui-area { height: 140px; display: flex; align-items: center; justify-content: center; background: #fff; border-top: 1px solid #eee; z-index: 10; }
     #dodge-btn { width: 80%; height: 70px; font-size: 1.5rem; font-weight: bold; background: #eee; border: 2px solid #ccc; border-radius: 15px; color: #555; outline: none; }
-    
-    /* メッセージレイヤー（ロード画面・メニュー含む） */
-    #msg-layer, #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,1); /* 背景を完全に白くして裏を見せない */ display: flex; justify-content: center; align-items: center; z-index: 20; }
-    #msg-content, #rule-content { text-align: center; padding: 30px; background: #fff; width: 90%; }
-    #msg-text { font-size: 1.3rem; font-weight: bold; margin-bottom: 20px; color: #444; }
+    #msg-layer, #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center; z-index: 20; }
+    #msg-content, #rule-content { text-align: center; padding: 30px; width: 90%; }
     #start-btn, #rule-btn, #close-rule-btn { padding: 12px 25px; margin: 8px; font-size: 1rem; font-weight: bold; border-radius: 10px; border: 1px solid #ccc; background: #fff; }
-    #start-btn { background: #eee; }
-    #loading-text { font-size: 1.2rem; font-weight: bold; color: #666; letter-spacing: 0.05em; }
+    #loading-text { font-size: 1.2rem; font-weight: bold; color: #666; }
   </style>
 </head>
 <body>
@@ -52,16 +50,20 @@
     <div id="life">LIFE: ❤❤❤</div>
   </div>
   <div id="game-field">
-    <div id="mochikuma"></div>
+    <div id="mochikuma-container">
+      <div id="img-normal" class="mk-layer"></div>
+      <div id="img-dodge" class="mk-layer"></div>
+      <div id="img-hit-job" class="mk-layer"></div>
+      <div id="img-hit-rest" class="mk-layer"></div>
+    </div>
     <div id="countdown" style="display: none;"></div>
   </div>
   
   <div id="msg-layer">
     <div id="msg-content">
-      <div id="loading-text">読み込み中...<br><span style="font-size:0.8rem;">(少し時間がかかります)</span></div>
-      
+      <div id="loading-text">Now loading...</div>
       <div id="menu-area" style="display: none;">
-        <p id="msg-text">もちくま、避ける。</p>
+        <p id="msg-text" style="font-weight:bold; font-size:1.3rem; margin-bottom:20px;">もちくま、避ける。</p>
         <button id="start-btn">開始</button>
         <button id="rule-btn">ルール</button>
       </div>
@@ -71,118 +73,87 @@
   <div id="rule-layer" style="display: none;">
     <div id="rule-content">
       <h3>【ルール】</h3>
-      <p style="text-align:left; margin:15px 0; line-height:1.6;">
-        ・落ちてくる「仕事」を避ける<br>
-        ・「休み」は当たって取る<br>
-        ・ボタン長押しで右へ移動<br>
-        ・ライフが0になると終了
-      </p>
+      <p style="text-align:left; margin:15px 0;">・仕事を避けて休みを取る</p>
       <button id="close-rule-btn">閉じる</button>
     </div>
   </div>
 
-  <div id="ui-area">
-    <button id="dodge-btn">右へ避ける</button>
-  </div>
+  <div id="ui-area"><button id="dodge-btn">右へ避ける</button></div>
 </div>
 
 <script>
-// 要素の取得
-const mk = document.getElementById('mochikuma');
-const dodgeBtn = document.getElementById('dodge-btn');
-const msgLayer = document.getElementById('msg-layer');
-const ruleLayer = document.getElementById('rule-layer');
-const loadingText = document.getElementById('loading-text');
-const menuArea = document.getElementById('menu-area');
-const startBtn = document.getElementById('start-btn');
-const ruleBtn = document.getElementById('rule-btn');
-const closeRuleBtn = document.getElementById('close-rule-btn');
-const scoreDisp = document.getElementById('score');
-const lifeDisp = document.getElementById('life');
-const msgText = document.getElementById('msg-text');
-
-// 画像URLリスト
-const IMAGES = {
-  NORMAL: 'https://www.dropbox.com/scl/fi/gbx2wrt5bha180w2ijt5x/.png?rlkey=gp94iamo9ynne2nmayuzabg9g&raw=1',
-  DODGE:  'https://www.dropbox.com/scl/fi/7ta2gvz0lm5aieejh85f8/.png?rlkey=4c7iwsjkmrt9tshsdllvyyoih&raw=1',
-  HIT_JOB: 'https://www.dropbox.com/scl/fi/2p4c3vse6bora2td4rzbg/.png?rlkey=zvhcdn1i7wfr4nb3akrupjbl6&raw=1',
-  HIT_REST: 'https://www.dropbox.com/scl/fi/0nb6a5d1mc6ymjxze2sdc/.png?rlkey=opewycm3h88ri2w86mlhgi432&raw=1'
+const container = document.getElementById('mochikuma-container');
+const layers = {
+  normal: document.getElementById('img-normal'),
+  dodge: document.getElementById('img-dodge'),
+  job: document.getElementById('img-hit-job'),
+  rest: document.getElementById('img-hit-rest')
 };
 
-let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: false };
+const IMAGES = {
+  normal: 'https://www.dropbox.com/scl/fi/gbx2wrt5bha180w2ijt5x/.png?rlkey=gp94iamo9ynne2nmayuzabg9g&raw=1',
+  dodge:  'https://www.dropbox.com/scl/fi/7ta2gvz0lm5aieejh85f8/.png?rlkey=4c7iwsjkmrt9tshsdllvyyoih&raw=1',
+  job: 'https://www.dropbox.com/scl/fi/2p4c3vse6bora2td4rzbg/.png?rlkey=zvhcdn1i7wfr4nb3akrupjbl6&raw=1',
+  rest: 'https://www.dropbox.com/scl/fi/0nb6a5d1mc6ymjxze2sdc/.png?rlkey=opewycm3h88ri2w86mlhgi432&raw=1'
+};
 
-// --- 【重要】画像を裏側で確実に読み込む処理 ---
-function preloadImages() {
-  const urls = Object.values(IMAGES);
-  let loadedCount = 0;
-  
-  // 全ての画像に対して「読み込み開始」の命令を出す
-  urls.forEach(url => {
-    const img = new Image();
-    // 読み込み成功時も失敗時も、とにかく「終わった」とカウントする
-    img.onload = img.onerror = () => {
-      loadedCount++;
-      // 全ての画像の読み込みが終わったら、メニューを表示する
-      if (loadedCount === urls.length) {
-        showMenu();
-      }
-    };
-    img.src = url; // 読み込み開始
+let state = { score: 0, life: 3, active: false, dodging: false, speed: 6 };
+
+// 画像をレイヤーにセットし、全ロードを待つ
+async function initImages() {
+  const promises = Object.keys(IMAGES).map(key => {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        layers[key].style.backgroundImage = `url('${IMAGES[key]}')`;
+        resolve();
+      };
+      img.src = IMAGES[key];
+    });
   });
+  await Promise.all(promises);
+  document.getElementById('loading-text').style.display = 'none';
+  document.getElementById('menu-area').style.display = 'block';
+  setPose('normal');
 }
 
-// 読み込み完了後に実行される関数
-function showMenu() {
-  // 少し待ってから表示を切り替える（チラつき防止）
-  setTimeout(() => {
-    loadingText.style.display = 'none'; // 「読み込み中」を消す
-    menuArea.style.display = 'block';   // 「開始」ボタンなどを出す
-    state.canStart = true;              // ゲーム開始を許可する
-    mk.style.backgroundImage = `url('${IMAGES.NORMAL}')`; // もちくまを表示させる
-  }, 500);
+// ポーズ切り替え関数（透明度を操る）
+function setPose(poseKey) {
+  Object.values(layers).forEach(l => l.classList.remove('active'));
+  layers[poseKey].classList.add('active');
 }
 
-// ページを開いたらすぐに読み込みを開始
-preloadImages();
-// -------------------------------------------
+initImages();
 
-// ボタンイベントの設定
-ruleBtn.addEventListener('click', () => ruleLayer.style.display = 'flex');
-closeRuleBtn.addEventListener('click', () => ruleLayer.style.display = 'none');
-
-startBtn.addEventListener('click', () => {
-  if(state.canStart) {
-    msgLayer.style.display = 'none';
-    state.active = true;
-    initGame();
-  }
-});
-
-// ゲームロジック（操作・判定など）
+// 操作
 const startDodge = (e) => { 
   if (e.cancelable) e.preventDefault();
-  if(!state.active) return; 
-  state.dodging = true; 
-  mk.classList.add('dodging'); 
-  mk.style.backgroundImage = `url('${IMAGES.DODGE}')`;
+  if(!state.active) return;
+  state.dodging = true;
+  container.classList.add('dodging');
+  setPose('dodge');
 };
 const endDodge = (e) => { 
-  state.dodging = false; 
-  mk.classList.remove('dodging'); 
-  if(state.active) mk.style.backgroundImage = `url('${IMAGES.NORMAL}')`;
+  state.dodging = false;
+  container.classList.remove('dodging');
+  if(state.active) setPose('normal');
 };
 
-dodgeBtn.addEventListener('touchstart', startDodge, {passive: false});
-dodgeBtn.addEventListener('touchend', endDodge);
+const btn = document.getElementById('dodge-btn');
+btn.addEventListener('touchstart', startDodge, {passive: false});
+btn.addEventListener('touchend', endDodge);
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('msg-layer').style.display = 'none';
+  state.active = true;
+  initGame();
+});
 
 function initGame() {
-  state.score = 0;
-  state.life = 3;
-  state.speed = 6;
-  scoreDisp.innerText = 'SCORE: 0';
-  lifeDisp.innerText = 'LIFE: ❤❤❤';
-  mk.style.backgroundImage = `url('${IMAGES.NORMAL}')`;
-  document.querySelectorAll('.obj').forEach(o => o.remove());
+  state.score = 0; state.life = 3;
+  document.getElementById('score').innerText = 'SCORE: 0';
+  document.getElementById('life').innerText = 'LIFE: ❤❤❤';
+  setPose('normal');
   spawn();
 }
 
@@ -201,43 +172,43 @@ function spawn() {
     obj.style.transform = `translate3d(-50%, ${posY}px, 0)`;
 
     const objRect = obj.getBoundingClientRect();
-    const mkRect = mk.getBoundingClientRect();
+    const mkRect = container.getBoundingClientRect();
 
     if(objRect.bottom > mkRect.top && objRect.top < mkRect.bottom) {
       if(!state.dodging) {
         if(isJob) { 
           state.active = false;
-          mk.style.backgroundImage = `url('${IMAGES.HIT_JOB}')`;
-          msgText.innerHTML = `仕事に捕まった…<br>SCORE: ${state.score}`;
-          menuArea.style.display = 'block';
-          msgLayer.style.display = 'flex';
+          setPose('job');
+          document.getElementById('msg-text').innerHTML = `仕事に捕まった…<br>SCORE: ${state.score}`;
+          document.getElementById('msg-layer').style.display = 'flex';
           clearInterval(loop);
         } else {
           state.score += 10;
-          scoreDisp.innerText = `SCORE: ${state.score}`;
-          obj.remove();
-          clearInterval(loop);
+          document.getElementById('score').innerText = `SCORE: ${state.score}`;
+          obj.remove(); clearInterval(loop);
         }
       }
     }
-    if(posY > document.getElementById('game-field').clientHeight + 50) { 
+    if(posY > 1000) {
       if(!isJob && !state.dodging) {
-          state.life--;
-          lifeDisp.innerText = `LIFE: ${'❤'.repeat(state.life)}${'♡'.repeat(3 - state.life)}`;
-          if(state.life <= 0) {
-            state.active = false;
-            mk.style.backgroundImage = `url('${IMAGES.HIT_REST}')`;
-            msgText.innerHTML = `休みが足りない…<br>SCORE: ${state.score}`;
-            menuArea.style.display = 'block';
-            msgLayer.style.display = 'flex';
-            clearInterval(loop);
-          }
+        state.life--;
+        document.getElementById('life').innerText = `LIFE: ${'❤'.repeat(state.life)}${'♡'.repeat(3-state.life)}`;
+        if(state.life <= 0) {
+          state.active = false;
+          setPose('rest');
+          document.getElementById('msg-text').innerHTML = `休みが足りない…<br>SCORE: ${state.score}`;
+          document.getElementById('msg-layer').style.display = 'flex';
+          clearInterval(loop);
+        }
       }
-      obj.remove(); clearInterval(loop); 
+      obj.remove(); clearInterval(loop);
     }
   }, 16);
-  setTimeout(spawn, Math.max(1500 - (state.score * 5), 600));
+  setTimeout(spawn, 1500);
 }
+
+document.getElementById('rule-btn').addEventListener('click', () => document.getElementById('rule-layer').style.display = 'flex');
+document.getElementById('close-rule-btn').addEventListener('click', () => document.getElementById('rule-layer').style.display = 'none');
 </script>
 </body>
 </html>
