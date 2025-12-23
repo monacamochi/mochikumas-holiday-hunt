@@ -68,30 +68,30 @@
     }
     #dodge-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #003d7a; }
 
-    #msg-layer, #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 60px; z-index: 20; }
+    #msg-layer, #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 80px; z-index: 20; }
     
-    /* 中央ダイアログ：kumo.png を背景に設定 */
+    /* 577x409の比率に合わせて調整 */
     #msg-content { 
       text-align: center; 
-      padding: 60px 40px; /* 雲の中に収まるよう余白を多めに設定 */
+      padding: 40px 30px; 
       background-image: url('kumo.png');
-      background-size: contain;
+      background-size: 100% 100%;
       background-repeat: no-repeat;
       background-position: center;
-      background-color: transparent; /* 白背景を消去 */
-      border: none; /* 枠線を消去 */
-      width: 90%; 
-      min-height: 300px;
+      background-color: transparent;
+      border: none;
+      width: 320px; /* iPhoneSE等の小型端末も考慮した幅 */
+      height: 227px; /* 320px に対する 577:409 の比率計算値 */
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      box-shadow: none; /* 影を消去 */
+      box-shadow: none;
     }
 
     #rule-content { text-align: center; padding: 25px; background: #fff; border: 1px solid #eee; border-radius: 12px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
-    #msg-text { font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; color: #444; line-height: 1.4; }
-    #start-btn, #rule-btn, #close-rule-btn { padding: 12px 25px; margin: 8px; font-size: 1rem; font-weight: bold; border-radius: 10px; border: 1px solid #ccc; background: #fff; }
+    #msg-text { font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; color: #444; line-height: 1.4; }
+    #start-btn, #rule-btn, #close-rule-btn { padding: 10px 20px; margin: 5px; font-size: 0.9rem; font-weight: bold; border-radius: 10px; border: 1px solid #ccc; background: #fff; }
     #start-btn { background: #eee; }
     #rule-content p { font-size: 0.95rem; margin-bottom: 10px; text-align: left; line-height: 1.5; color: #444; }
     #loading-text { font-weight: bold; color: #aaa; padding: 30px; letter-spacing: 0.05em; }
@@ -162,7 +162,7 @@ const IMAGES = {
   DODGE:  'yoke.png',
   HIT_JOB: 'shigoto.png',
   HIT_REST: 'yasumi.png',
-  KUMO: 'kumo.png' // プリロードに追加
+  KUMO: 'kumo.png'
 };
 
 let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: true, isMuted: false };
