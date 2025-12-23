@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>もちくま、避ける。</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { background: #fff; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; }
+    #game-wrap { width: 100vw; height: 100vh; position: relative; background: #fafafa; display: flex; flex-direction: column; }
+    #status { height: 60px; display: flex; justify-content: space-around; align-items: center; font-weight: bold; color: #666; background: #fff; border-bottom: 1px solid #eee; z-index: 10; }
+    #life { color: #ff6b6b; }
+    #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
+    #mochikuma {
+      width: 120px; height: 120px; position: absolute; bottom: 40px; left: 50%;
+      transform: translate3d(-50%, 0, 0); background-size: contain; background-repeat: no-repeat;
+      background-position: center; transition: transform 0.1s ease-out; z-index: 5; will-change: transform;
+    }
+    #mochikuma.dodging { transform: translate3d(50%, 0, 0); }
+    #countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #555; z-index: 15; }
+    .obj { position: absolute; left: 50%; top: 0; padding: 10px 20px; border-radius: 8px; font-weight: bold; white-space: nowrap; z-index: 4; transform: translate3d(-50%, -100px, 0); will-change: transform; }
+    .job { background: #555; color: #fff; }
+    .rest { background: #ffeb3b; color: #333; }
+    #ui-area { height: 140px; display: flex; align-items: center; justify-content: center; background: #fff; border-top: 1px solid #eee; z-index: 10; }
+    #dodge-btn { width: 80%; height: 70px; font-size: 1.5rem; font-weight: bold; background: #eee; border: 2px solid #ccc; border-radius: 15px; color: #555; outline: none; -webkit-touch-callout: none; }
+    #msg-layer, #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 60px; z-index: 20; }
+    #msg-content, #rule-content { text-align: center; padding: 25px; background: #fff; border: 1px solid #eee; border-radius: 12px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+    #msg-text { font-size: 1.3rem; font-weight: bold; margin-bottom: 20px; color: #444; }
+    #start-btn, #rule-btn, #close-rule-btn { padding: 12px 25px; margin: 8px; font-size: 1rem; font-weight: bold; border-radius: 10px; border: 1px solid #ccc; background: #fff; }
+    #start-btn { background: #eee; }
+    #rule-content p { font-size: 0.95rem; margin-bottom: 10px; text-align: left; line-height: 1.5; color: #444; }
+    #loading-text { font-weight: bold; color: #aaa; padding: 30px; letter-spacing: 0.05em; }
+    /* 読み込み済み画像を保持し、スマホのメモリ破棄を防ぐ隠しエリア */
+    #preloader { position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+<div id="preloader"></div>
+
+<div id="game-wrap">
+  <div id="status">
+    <div id="score">SCORE: 0</div>
+    <div id="life">LIFE: ❤❤❤</div>
+  </div>
+  <div id="game-field">
+    <div id="mochikuma"></div>
+    <div id="countdown" style="display: none;"></div>
+  </div>
+  <div id="msg-layer">
+    <div id="msg-content">
+      <div id="loading-text">Now loading...</div>
+      <div id="menu-area" style="display: none;">
+        <p id="msg-text">もちくま、避ける。</p>
+        <div id="menu-btns">
+          <button id="start-btn">開始</button>
+          <button id="rule-btn">ルール</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="rule-layer" style="display: none;">
+    <div id="rule-content">
+      <h3>【ルール】</h3>
+      <p>・上から落ちてくる「仕事」を避ける</p>
+      <p>・「休み」は当たって取得する</p>
+      <p>・「右へ避ける」ボタン長押しで右移動</p>
+      <p>・「休み」を3回逃すと終了</p>
+      <button id="close-rule-btn">閉じる</button>
+    </div>
+  </div>
+  <div id="ui-area">
+    <button id="dodge-btn">右へ避ける</button>
+  </div>
+</div>
+
+<script>
+const mk = document.getElementById('mochikuma');
+const dodgeBtn = document.getElementById('dodge-btn');
+const msgLayer = document.getElementById('msg-layer');
+const ruleLayer = document.getElementById('rule-layer');
+const countdownDisp = document.getElementById('countdown');
+const msgText = document.getElementById('msg-text');
+const scoreDisp = document.getElementById('score');
+const lifeDisp = document.getElementById('life');
+const startBtn = document.getElementById('start-btn');
+const ruleBtn = document.getElementById('rule-btn');
+const closeRuleBtn = document.getElementById('close-rule-btn');
+const loadingText = document.getElementById('loading-text');
+const menuArea = document.getElementById('menu-area');
+const preloader = document.getElementById('preloader');
+
+// GitHubにアップロードする画像ファイル名
+const IMAGES = {
+  NORMAL: 'default.png',
+  DODGE:  'yoke.png',
+  HIT_JOB: 'shigoto.png',
+  HIT_REST: 'yasumi.png'
+};
+
+let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: true };
+let spawnTimer = null;
+
+function preloadAllImages(imageObj, callback) {
+  const urls = Object.values(imageObj);
+  let loadedCount = 0;
+  urls.forEach(url => {
+    const img = new Image();
+    img.onload = img.onerror = () => { 
+      loadedCount++; 
+      // メモリから消えないように物理的にHTMLに追加
+      const cacheImg = img.cloneNode();
+      preloader.appendChild(cacheImg);
+      if (loadedCount === urls.length) callback(); 
+    };
+    img.src = url;
+  });
+}
+
+preloadAllImages(IMAGES, () => {
+  loadingText.style.display = 'none';
+  menuArea.style.display = 'block';
+  setMochikumaImage(IMAGES.NORMAL);
+});
+
+function setMochikumaImage(url) { mk.style.backgroundImage = `url('${url}')`; }
+
+ruleBtn.addEventListener('click', () => ruleLayer.style.display = 'flex');
+closeRuleBtn.addEventListener('click', () => ruleLayer.style.display = 'none');
+
+const startDodge = (e) => { 
+  if (e.cancelable) e.preventDefault();
+  if(!state.active) return; 
+  state.dodging = true; 
+  mk.classList.add('dodging'); 
+  setMochikumaImage(IMAGES.DODGE);
+};
+const endDodge = (e) => { 
+  if (e.cancelable) e.preventDefault();
+  state.dodging = false; 
+  mk.classList.remove('dodging'); 
+  if(state.active) setMochikumaImage(IMAGES.NORMAL);
+};
+
+dodgeBtn.addEventListener('touchstart', startDodge, {passive: false});
+dodgeBtn.addEventListener('touchend', endDodge, {passive: false});
+dodgeBtn.addEventListener('mousedown', startDodge);
+dodgeBtn.addEventListener('mouseup', endDodge);
+
+startBtn.addEventListener('click', () => { if(state.canStart) startSequence(); });
+
+function startSequence() {
+  state.canStart = false;
+  msgLayer.style.display = 'none';
+  setMochikumaImage(IMAGES.NORMAL);
+  countdownDisp.style.display = 'block';
+  countdownDisp.innerText = 'Ready';
+  setTimeout(() => {
+    countdownDisp.innerText = 'Go!';
+    setTimeout(() => {
+      countdownDisp.style.display = 'none';
+      initGame();
+    }, 800);
+  }, 1000);
+}
+
+function initGame() {
+  if (spawnTimer) clearTimeout(spawnTimer);
+  document.querySelectorAll('.obj').forEach(o => o.remove());
+  state = { score: 0, life: 3, active: true, dodging: false, speed: 6, canStart: false };
+  scoreDisp.innerText = `SCORE: 0`;
+  updateLife();
+  spawn();
+}
+
+function spawn() {
+  if(!state.active) return;
+  const obj = document.createElement('div');
+  const isJob = Math.random() > 0.4;
+  obj.className = `obj ${isJob ? 'job' : 'rest'}`;
+  obj.innerText = isJob ? '仕事' : '休み';
+  document.getElementById('game-field').appendChild(obj);
+
+  let posY = -100;
+  let hasChecked = false;
+  const currentSpeed = Math.min(state.speed + (state.score / 25), 18);
+
+  const loop = setInterval(() => {
+    if(!state.active) { clearInterval(loop); obj.remove(); return; }
+    posY += currentSpeed;
+    obj.style.transform = `translate3d(-50%, ${posY}px, 0)`;
+
+    const objRect = obj.getBoundingClientRect();
+    const mkRect = mk.getBoundingClientRect();
+
+    if(!hasChecked && objRect.bottom > mkRect.top && objRect.top < mkRect.bottom) {
+      if(!state.dodging) {
+        hasChecked = true;
+        if(isJob) { endGame('job'); clearInterval(loop); }
+        else { state.score += 10; scoreDisp.innerText = `SCORE: ${state.score}`; obj.remove(); clearInterval(loop); }
+      }
+    }
+    if(!hasChecked && objRect.top > mkRect.bottom) {
+      hasChecked = true;
+      if(!isJob) { 
+        state.life--; 
+        updateLife(); 
+        if(state.life <= 0) { endGame('rest'); clearInterval(loop); } 
+      }
+    }
+    if(posY > document.getElementById('game-field').clientHeight + 150) { obj.remove(); clearInterval(loop); }
+  }, 16);
+  spawnTimer = setTimeout(spawn, Math.max(1800 - (state.score * 12), 550));
+}
+
+function updateLife() {
+  const currentLife = Math.max(0, state.life);
+  lifeDisp.innerText = `LIFE: ${'❤'.repeat(currentLife)}${'♡'.repeat(3 - currentLife)}`;
+}
+
+function endGame(reason) {
+  state.active = false;
+  if (spawnTimer) clearTimeout(spawnTimer);
+  document.querySelectorAll('.obj').forEach(o => o.remove());
+  if(reason === 'job') {
+    setMochikumaImage(IMAGES.HIT_JOB);
+    msgText.innerHTML = `仕事に当たってしまった…<br>SCORE: ${state.score}`;
+  } else {
+    setMochikumaImage(IMAGES.HIT_REST);
+    msgText.innerHTML = `休みが足りない…<br>SCORE: ${state.score}`;
+  }
+  msgLayer.style.display = 'flex';
+  setTimeout(() => { state.canStart = true; }, 800);
+}
+</script>
+</body>
+</html>
