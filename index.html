@@ -8,26 +8,38 @@
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { background: #fff; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; }
     
+    /* 全体の背景：淡めのブルー */
     #game-wrap { 
       width: 100vw; 
       height: 100vh; 
       height: 100dvh; 
       position: relative; 
-      background: #fafafa; 
+      background: #eef6ff; 
       display: flex; 
       flex-direction: column; 
     }
     
-    #status { height: 60px; display: flex; justify-content: space-around; align-items: center; font-weight: bold; color: #666; background: #fff; border-bottom: 1px solid #eee; z-index: 10; }
+    /* 上部の帯：さらに淡いブルー */
+    #status { 
+      height: 60px; 
+      display: flex; 
+      justify-content: space-around; 
+      align-items: center; 
+      font-weight: bold; 
+      color: #666; 
+      background: #f5faff; 
+      border-bottom: 1px solid #dee7ef; 
+      z-index: 10; 
+    }
     #life { color: #ff6b6b; }
     
-    /* ミュートボタン */
     #mute-btn {
       position: absolute; top: 15px; right: 15px; width: 30px; height: 30px;
       background: none; border: none; font-size: 1.5rem; cursor: pointer; z-index: 30; outline: none;
     }
 
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
+    
     #mochikuma {
       width: 120px; height: 120px; position: absolute; bottom: 40px; left: 50%;
       transform: translate3d(-50%, 0, 0); background-size: contain; background-repeat: no-repeat;
@@ -40,23 +52,25 @@
     .job { background: #555; color: #fff; }
     .rest { background: #ffeb3b; color: #333; }
     
+    /* 下部の帯：さらに淡いブルー */
     #ui-area { 
       height: 140px; 
       display: flex; 
       align-items: center; 
       justify-content: center; 
-      background: #fff; 
-      border-top: 1px solid #eee; 
+      background: #f5faff; 
+      border-top: 1px solid #dee7ef; 
       z-index: 10;
       padding-bottom: env(safe-area-inset-bottom);
     }
     
+    /* よけるボタン：濃い青に白文字 */
     #dodge-btn { 
       width: 70%; height: 80px; font-size: 1.8rem; font-weight: bold; 
-      background: #eee; border: 2px solid #ccc; border-radius: 40px; 
-      color: #555; outline: none; box-shadow: 0 4px 0 #bbb;
+      background: #0056b3; border: none; border-radius: 40px; 
+      color: #ffffff; outline: none; box-shadow: 0 4px 0 #003d7a;
     }
-    #dodge-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #bbb; }
+    #dodge-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #003d7a; }
 
     #msg-layer, #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 60px; z-index: 20; }
     #msg-content, #rule-content { text-align: center; padding: 25px; background: #fff; border: 1px solid #eee; border-radius: 12px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
@@ -137,7 +151,6 @@ const IMAGES = {
 let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: true, isMuted: false };
 let spawnTimer = null;
 
-// ミュート切り替え処理
 muteBtn.addEventListener('click', () => {
   state.isMuted = !state.isMuted;
   bgm.muted = state.isMuted;
@@ -192,7 +205,6 @@ dodgeBtn.addEventListener('mouseup', endDodge);
 startBtn.addEventListener('click', () => { if(state.canStart) startSequence(); });
 
 function startSequence() {
-  // BGMの再生（Safari対策のためユーザー操作時に開始）
   bgm.currentTime = 0;
   bgm.play().catch(e => console.log("再生失敗:", e));
   
@@ -266,7 +278,7 @@ function updateLife() {
 
 function endGame(reason) {
   state.active = false;
-  bgm.pause(); // BGMを停止
+  bgm.pause();
   if (spawnTimer) clearTimeout(spawnTimer);
   document.querySelectorAll('.obj').forEach(o => o.remove());
   if(reason === 'job') {
@@ -277,7 +289,7 @@ function endGame(reason) {
     msgText.innerHTML = `休みが足りない…<br>SCORE: ${state.score}`;
   }
   
-  startBtn.innerText = '再挑戦'; // ボタンを再挑戦に変更
+  startBtn.innerText = '再挑戦';
   msgLayer.style.display = 'flex';
   setTimeout(() => { state.canStart = true; }, 800);
 }
