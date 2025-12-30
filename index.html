@@ -95,9 +95,9 @@ const muteBtn = document.getElementById('mute-btn');
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-// --- 低遅延オーディオ設定（徹底強化） ---
+// --- 低遅延オーディオ設定（極限） ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
-  latencyHint: 'interactive' // 低遅延モードをリクエスト
+  latencyHint: 'interactive'
 });
 let getSoundBuffer = null;
 
@@ -109,17 +109,16 @@ async function loadGetSound() {
   } catch (e) { console.error("音声読み込み失敗:", e); }
 }
 
-// エンジンを叩き起こすための空再生
-function warmUpAudio() {
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+// 効果音の「喉鳴らし」：無音で一度再生してシステムを暖める
+function silentPlay() {
+  if (!getSoundBuffer) return;
   const source = audioCtx.createBufferSource();
-  const oscillator = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
+  source.buffer = getSoundBuffer;
   gain.gain.value = 0; // 無音
-  oscillator.connect(gain);
+  source.connect(gain);
   gain.connect(audioCtx.destination);
-  oscillator.start(0);
-  oscillator.stop(0.001);
+  source.start(0);
 }
 
 function playGetSound() {
@@ -129,13 +128,9 @@ function playGetSound() {
   const source = audioCtx.createBufferSource();
   const gainNode = audioCtx.createGain();
   source.buffer = getSoundBuffer;
-  
   gainNode.gain.value = isMobile ? 0.5 : 0.15; 
-  
   source.connect(gainNode);
   gainNode.connect(audioCtx.destination);
-  
-  // 現在時刻に合わせて最短で再生開始
   source.start(audioCtx.currentTime);
 }
 
@@ -212,7 +207,7 @@ window.addEventListener('mouseup', endDodge);
 
 startBtn.addEventListener('click', () => { 
   if(state.canStart) {
-    warmUpAudio(); // ここで音声を叩き起こす
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     startSequence(); 
   }
 });
@@ -233,8 +228,13 @@ function startSequence() {
   setMochikumaImage(IMAGES.NORMAL);
   countdownDisp.style.display = 'block';
   countdownDisp.innerText = 'Ready';
+  
+  // カウントダウン中に効果音を無音で空再生（喉鳴らし）
+  silentPlay();
+  
   setTimeout(() => {
     countdownDisp.innerText = 'Go!';
+    silentPlay(); // Goのタイミングでもう一度
     setTimeout(() => {
       countdownDisp.style.display = 'none';
       initGame();
@@ -298,7 +298,7 @@ function spawn() {
         } else { 
           state.score += 10; 
           scoreDisp.innerText = `SCORE: ${state.score}`; 
-          playGetSound(); // 判定と同時に即再生
+          playGetSound();
           obj.remove(); 
           clearInterval(loop); 
         }
