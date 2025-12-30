@@ -93,11 +93,12 @@ const preloader = document.getElementById('preloader');
 const bgm = document.getElementById('bgm');
 const muteBtn = document.getElementById('mute-btn');
 
-// --- デバイス判定 ---
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-// --- 低遅延オーディオ設定 ---
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// --- 低遅延オーディオ設定（徹底強化） ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+  latencyHint: 'interactive' // 低遅延モードをリクエスト
+});
 let getSoundBuffer = null;
 
 async function loadGetSound() {
@@ -108,6 +109,19 @@ async function loadGetSound() {
   } catch (e) { console.error("音声読み込み失敗:", e); }
 }
 
+// エンジンを叩き起こすための空再生
+function warmUpAudio() {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const source = audioCtx.createBufferSource();
+  const oscillator = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0; // 無音
+  oscillator.connect(gain);
+  gain.connect(audioCtx.destination);
+  oscillator.start(0);
+  oscillator.stop(0.001);
+}
+
 function playGetSound() {
   if (!getSoundBuffer || state.isMuted) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -116,12 +130,13 @@ function playGetSound() {
   const gainNode = audioCtx.createGain();
   source.buffer = getSoundBuffer;
   
-  // デバイスによって音量を切り替え
   gainNode.gain.value = isMobile ? 0.5 : 0.15; 
   
   source.connect(gainNode);
   gainNode.connect(audioCtx.destination);
-  source.start(0);
+  
+  // 現在時刻に合わせて最短で再生開始
+  source.start(audioCtx.currentTime);
 }
 
 const IMAGES = {
@@ -197,7 +212,7 @@ window.addEventListener('mouseup', endDodge);
 
 startBtn.addEventListener('click', () => { 
   if(state.canStart) {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    warmUpAudio(); // ここで音声を叩き起こす
     startSequence(); 
   }
 });
@@ -209,7 +224,6 @@ shareBtn.addEventListener('click', () => {
 });
 
 function startSequence() {
-  // BGM音量もスマホとPCで分ける場合はここも変更可能
   bgm.volume = isMobile ? 0.4 : 0.2;
   bgm.currentTime = 0;
   bgm.play().catch(e => console.log("再生失敗:", e));
@@ -284,7 +298,7 @@ function spawn() {
         } else { 
           state.score += 10; 
           scoreDisp.innerText = `SCORE: ${state.score}`; 
-          playGetSound();
+          playGetSound(); // 判定と同時に即再生
           obj.remove(); 
           clearInterval(loop); 
         }
