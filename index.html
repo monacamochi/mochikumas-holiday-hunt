@@ -68,6 +68,7 @@
 <body>
 <div id="preloader"></div>
 <audio id="bgm" src="bgm.mp3" loop></audio>
+<audio id="get-se" src="get.mp3"></audio>
 
 <div id="game-wrap">
   <button id="mute-btn">🔊</button>
@@ -122,6 +123,7 @@ const loadingText = document.getElementById('loading-text');
 const menuArea = document.getElementById('menu-area');
 const preloader = document.getElementById('preloader');
 const bgm = document.getElementById('bgm');
+const getSe = document.getElementById('get-se');
 const muteBtn = document.getElementById('mute-btn');
 
 const IMAGES = {
@@ -133,7 +135,6 @@ const IMAGES = {
   KAZI: 'kazi.png',
   GAKKOU: 'gakkou.png',
   KYUZITU: 'kyuzitu.png',
-  // 当たった時の各ゲームオーバー画像
   GO_SIGOTO: 'gameover-shigoto.png',
   GO_KAZI: 'gameover-kazi.png',
   GO_GAKKOU: 'gameover-gakkou.png'
@@ -151,6 +152,7 @@ let spawnTimer = null;
 muteBtn.addEventListener('click', () => {
   state.isMuted = !state.isMuted;
   bgm.muted = state.isMuted;
+  getSe.muted = state.isMuted;
   muteBtn.innerText = state.isMuted ? '🔇' : '🔊';
 });
 
@@ -272,12 +274,17 @@ function spawn() {
       if(!state.dodging) {
         hasChecked = true;
         if(isNegative) { 
-          // 当たったオブジェクトに応じた画像を渡す
           endGame(currentObj.goImg, currentObj.name); 
           clearInterval(loop); 
         } else { 
           state.score += 10; 
           scoreDisp.innerText = `SCORE: ${state.score}`; 
+          
+          // 効果音再生
+          getSe.currentTime = 0;
+          getSe.volume = 0.4;
+          getSe.play().catch(e => {});
+
           obj.remove(); 
           clearInterval(loop); 
         }
