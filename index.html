@@ -10,36 +10,19 @@
     body { background: #f0f0f0; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; }
     #game-wrap { width: 100vw; max-width: 450px; height: 100vh; height: 100dvh; position: relative; background: #eef6ff; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
     
-    /* ステータスバー */
     #status { height: 60px; display: flex; justify-content: space-around; align-items: center; font-weight: bold; color: #666; background: #f5faff; border-bottom: 1px solid #dee7ef; z-index: 10; }
     #life { color: #ff6b6b; }
     #mute-btn { position: absolute; top: 15px; right: 15px; width: 30px; height: 30px; background: none; border: none; font-size: 1.5rem; cursor: pointer; z-index: 30; outline: none; }
     
-    /* ゲームフィールド */
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
     #mochikuma { width: 120px; height: 132px; position: absolute; bottom: 40px; left: 50%; transform: translate3d(-50%, 0, 0); background-size: contain; background-repeat: no-repeat; background-position: center bottom; transition: transform 0.1s ease-out; z-index: 5; will-change: transform; }
     #mochikuma.dodging { transform: translate3d(50%, 0, 0); }
     #countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #555; z-index: 15; }
     .obj { position: absolute; left: 50%; top: 0; width: 80px; height: 80px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 4; transform: translate3d(-50%, -100px, 0); will-change: transform; }
     
-    /* メッセージレイヤー（ここを調整して全体を下げました） */
-    #msg-layer { 
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-      background: transparent; display: flex; justify-content: center; 
-      align-items: flex-start; 
-      padding-top: 110px; /* 前回の60pxから110pxに下げました */
-      z-index: 20; 
-    }
-    #msg-content { 
-      text-align: center; padding: 40px 30px; 
-      background-image: url('kumo.png'); background-size: 100% 100%; 
-      background-repeat: no-repeat; background-position: center; 
-      background-color: transparent; border: none; 
-      width: 320px; height: 227px; 
-      display: flex; flex-direction: column; justify-content: center; align-items: center; 
-    }
+    #msg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 150px; z-index: 20; }
+    #msg-content { text-align: center; padding: 40px 30px; background-image: url('kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; background-color: transparent; border: none; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     
-    /* ルールレイヤー */
     #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; z-index: 30; }
     #rule-content { text-align: center; padding: 25px; background: #fff; border-radius: 12px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
     
@@ -48,7 +31,6 @@
     #start-btn { background: #eee; }
     #share-btn { background: #000; color: #fff; border: none; display: none; }
 
-    /* 操作ボタン */
     #ui-area { height: 140px; display: flex; align-items: center; justify-content: center; background: #f5faff; border-top: 1px solid #dee7ef; z-index: 10; padding-bottom: env(safe-area-inset-bottom); }
     #dodge-btn { width: 70%; height: 80px; font-size: 1.8rem; font-weight: bold; background: #0056b3; border: none; border-radius: 40px; color: #ffffff; outline: none; box-shadow: 0 4px 0 #003d7a; }
     #dodge-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #003d7a; }
@@ -59,7 +41,6 @@
 </head>
 <body>
 <div id="preloader"></div>
-
 <div id="game-wrap">
   <button id="mute-btn">🔊</button>
   <div id="status">
@@ -99,7 +80,6 @@
 </div>
 
 <script>
-/* スクリプト部分は前回の「リセットタイミング修正版」と同じです */
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
@@ -118,12 +98,8 @@ const preloader = document.getElementById('preloader');
 const muteBtn = document.getElementById('mute-btn');
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
-let bgmBuffer = null;
-let getSoundBuffer = null;
-let bgmSource = null;
-let bgmGain = null;
+let bgmBuffer = null, getSoundBuffer = null, bgmSource = null, bgmGain = null;
 
 async function loadAudio(url) {
   const response = await fetch(url);
@@ -158,17 +134,10 @@ function playGetSound() {
   source.start(audioCtx.currentTime);
 }
 
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
-    if (audioCtx.state !== 'closed') audioCtx.suspend();
-  } else {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-  }
-});
-
 const IMAGES = {
   NORMAL: 'default.png', DODGE: 'yoke.png', HIT_REST: 'yasumi.png', KUMO: 'kumo.png',
   SIGOTO: 'sigoto.png', KAZI: 'kazi.png', GAKKOU: 'gakkou.png', KYUZITU: 'kyuzitu.png',
+  GET: 'default-get.png', // 追加：笑顔画像
   GO_SIGOTO: 'gameover-shigoto.png', GO_KAZI: 'gameover-kazi.png', GO_GAKKOU: 'gameover-gakkou.png'
 };
 
@@ -178,45 +147,22 @@ const NEGATIVE_TYPES = [
   { img: IMAGES.GAKKOU, goImg: IMAGES.GO_GAKKOU, name: "学校" }
 ];
 
-let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: true, isMuted: false };
+let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: true, isMuted: false, isSmiling: false };
 let spawnTimer = null;
-
-muteBtn.addEventListener('click', () => {
-  state.isMuted = !state.isMuted;
-  if (bgmGain) bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
-  muteBtn.innerText = state.isMuted ? '🔇' : '🔊';
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-});
-
-function preloadAllImages(imageObj, callback) {
-  const urls = Object.values(imageObj);
-  let loadedCount = 0;
-  urls.forEach(url => {
-    const img = new Image();
-    img.onload = img.onerror = () => { 
-      loadedCount++; 
-      const cacheImg = img.cloneNode();
-      preloader.appendChild(cacheImg);
-      if (loadedCount === urls.length) callback(); 
-    };
-    img.src = url;
-  });
-}
-
-Promise.all([
-  new Promise(res => preloadAllImages(IMAGES, res)),
-  loadAudio('bgm.mp3').then(b => bgmBuffer = b),
-  loadAudio('get.mp3').then(b => getSoundBuffer = b)
-]).then(() => {
-  loadingText.style.display = 'none';
-  menuArea.style.display = 'block';
-  setMochikumaImage(IMAGES.NORMAL);
-});
 
 function setMochikumaImage(url) { mk.style.backgroundImage = `url('${url}')`; }
 
-ruleBtn.addEventListener('click', () => ruleLayer.style.display = 'flex');
-closeRuleBtn.addEventListener('click', () => ruleLayer.style.display = 'none');
+// 衝突時に笑顔にする関数
+function showSmileEffect() {
+  state.isSmiling = true;
+  setMochikumaImage(IMAGES.GET);
+  setTimeout(() => {
+    state.isSmiling = false;
+    if(state.active) {
+      setMochikumaImage(state.dodging ? IMAGES.DODGE : IMAGES.NORMAL);
+    }
+  }, 300); // 0.3秒間だけ笑顔
+}
 
 const startDodge = (e) => { 
   if (e.cancelable) e.preventDefault();
@@ -224,60 +170,19 @@ const startDodge = (e) => {
   if(!state.active) return; 
   state.dodging = true; 
   mk.classList.add('dodging'); 
-  setMochikumaImage(IMAGES.DODGE);
+  if(!state.isSmiling) setMochikumaImage(IMAGES.DODGE);
 };
 const endDodge = (e) => { 
   if (e.cancelable) e.preventDefault();
   state.dodging = false; 
   mk.classList.remove('dodging'); 
-  if(state.active) setMochikumaImage(IMAGES.NORMAL);
+  if(state.active && !state.isSmiling) setMochikumaImage(IMAGES.NORMAL);
 };
 
 dodgeBtn.addEventListener('touchstart', startDodge, {passive: false});
 dodgeBtn.addEventListener('touchend', endDodge, {passive: false});
 dodgeBtn.addEventListener('mousedown', startDodge);
 window.addEventListener('mouseup', endDodge);
-
-startBtn.addEventListener('click', () => { 
-  if(state.canStart) {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    startSequence(); 
-  }
-});
-
-function startSequence() {
-  state.canStart = false;
-  state.score = 0;
-  state.life = 3;
-  scoreDisp.innerText = `SCORE: 0`;
-  updateLife();
-  
-  msgLayer.style.display = 'none';
-  shareBtn.style.display = 'none';
-  setMochikumaImage(IMAGES.NORMAL);
-  countdownDisp.style.display = 'block';
-  countdownDisp.innerText = 'Ready';
-  
-  setTimeout(() => {
-    countdownDisp.innerText = 'Go!';
-    playBGM();
-    setTimeout(() => {
-      countdownDisp.style.display = 'none';
-      initGame();
-    }, 800);
-  }, 1000);
-}
-
-function initGame() {
-  if (spawnTimer) clearTimeout(spawnTimer);
-  document.querySelectorAll('.obj').forEach(o => o.remove());
-  state.active = true;
-  state.dodging = false;
-  state.speed = 6;
-  mk.classList.remove('dodging'); 
-  setMochikumaImage(IMAGES.NORMAL);
-  spawn();
-}
 
 function spawn() {
   if(!state.active) return;
@@ -308,14 +213,7 @@ function spawn() {
     const mkHitRight = mkRect.right - (mkRect.width * 0.2);
     const mkHitTop = mkRect.top + (mkRect.height * 0.2);
     
-    const isOverlapping = (
-      objRect.right > mkHitLeft &&
-      objRect.left < mkHitRight &&
-      objRect.bottom > mkHitTop &&
-      objRect.top < mkRect.bottom
-    );
-
-    if(!hasChecked && isOverlapping) {
+    if(!hasChecked && (objRect.right > mkHitLeft && objRect.left < mkHitRight && objRect.bottom > mkHitTop && objRect.top < mkRect.bottom)) {
       if(!state.dodging) {
         hasChecked = true;
         if(isNegative) { 
@@ -325,6 +223,7 @@ function spawn() {
           state.score += 10; 
           scoreDisp.innerText = `SCORE: ${state.score}`; 
           playGetSound();
+          showSmileEffect(); // 休日ゲットで笑顔
           obj.remove(); 
           clearInterval(loop); 
         }
@@ -343,27 +242,76 @@ function spawn() {
   spawnTimer = setTimeout(spawn, Math.max(1800 - (state.score * 12), 550));
 }
 
+// その他の関数（初期化、ライフ更新、終了処理等）は変更なしで継続
+function startSequence() {
+  state.canStart = false; state.score = 0; state.life = 3; state.isSmiling = false;
+  scoreDisp.innerText = `SCORE: 0`; updateLife();
+  msgLayer.style.display = 'none'; shareBtn.style.display = 'none';
+  setMochikumaImage(IMAGES.NORMAL);
+  countdownDisp.style.display = 'block'; countdownDisp.innerText = 'Ready';
+  setTimeout(() => {
+    countdownDisp.innerText = 'Go!'; playBGM();
+    setTimeout(() => { countdownDisp.style.display = 'none'; initGame(); }, 800);
+  }, 1000);
+}
+function initGame() {
+  if (spawnTimer) clearTimeout(spawnTimer);
+  document.querySelectorAll('.obj').forEach(o => o.remove());
+  state.active = true; state.dodging = false; state.speed = 6;
+  mk.classList.remove('dodging'); setMochikumaImage(IMAGES.NORMAL);
+  spawn();
+}
 function updateLife() {
   const currentLife = Math.max(0, state.life);
   lifeDisp.innerText = `LIFE: ${'❤'.repeat(currentLife)}${'♡'.repeat(3 - currentLife)}`;
 }
-
 function endGame(gameOverImg, typeName) {
-  state.active = false; 
-  stopBGM();
+  state.active = false; stopBGM();
   if (spawnTimer) clearTimeout(spawnTimer);
   document.querySelectorAll('.obj').forEach(o => o.remove());
   setMochikumaImage(gameOverImg);
-  if(typeName === '休日') {
-    msgText.innerHTML = `休日が足りない…<br>SCORE: ${state.score}`;
-  } else {
-    msgText.innerHTML = `${typeName}には勝てなかった…<br>SCORE: ${state.score}`;
-  }
-  startBtn.innerText = '再挑戦';
-  shareBtn.style.display = 'inline-block';
+  msgText.innerHTML = (typeName === '休日' ? `休日が足りない…` : `${typeName}には勝てなかった…`) + `<br>SCORE: ${state.score}`;
+  startBtn.innerText = '再挑戦'; shareBtn.style.display = 'inline-block';
   msgLayer.style.display = 'flex';
   setTimeout(() => { state.canStart = true; }, 800);
 }
+muteBtn.addEventListener('click', () => {
+  state.isMuted = !state.isMuted;
+  if (bgmGain) bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
+  muteBtn.innerText = state.isMuted ? '🔇' : '🔊';
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+});
+function preloadAllImages(imageObj, callback) {
+  const urls = Object.values(imageObj); let loadedCount = 0;
+  urls.forEach(url => {
+    const img = new Image();
+    img.onload = img.onerror = () => { 
+      loadedCount++; 
+      preloader.appendChild(img.cloneNode());
+      if (loadedCount === urls.length) callback(); 
+    };
+    img.src = url;
+  });
+}
+Promise.all([
+  new Promise(res => preloadAllImages(IMAGES, res)),
+  loadAudio('bgm.mp3').then(b => bgmBuffer = b),
+  loadAudio('get.mp3').then(b => getSoundBuffer = b)
+]).then(() => {
+  loadingText.style.display = 'none'; menuArea.style.display = 'block';
+  setMochikumaImage(IMAGES.NORMAL);
+});
+ruleBtn.addEventListener('click', () => ruleLayer.style.display = 'flex');
+closeRuleBtn.addEventListener('click', () => ruleLayer.style.display = 'none');
+shareBtn.addEventListener('click', () => {
+  const text = encodeURIComponent(`「もちくまの休日ハント」で遊んだよ！\nスコアは【${state.score}】でした！\n\n#もちくま #もちくまの休日ハント`);
+  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(window.location.href)}`, '_blank');
+});
+startBtn.addEventListener('click', () => { if(state.canStart) { if (audioCtx.state === 'suspended') audioCtx.resume(); startSequence(); } });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { if (audioCtx.state !== 'closed') audioCtx.suspend(); }
+  else { if (audioCtx.state === 'suspended') audioCtx.resume(); }
+});
 </script>
 </body>
 </html>
