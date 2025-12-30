@@ -34,7 +34,6 @@
 </head>
 <body>
 <div id="preloader"></div>
-<audio id="bgm" src="bgm.mp3" loop></audio>
 
 <div id="game-wrap">
   <button id="mute-btn">🔊</button>
@@ -75,6 +74,7 @@
 </div>
 
 <script>
+// --- 基本要素 ---
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
@@ -90,37 +90,42 @@ const closeRuleBtn = document.getElementById('close-rule-btn');
 const loadingText = document.getElementById('loading-text');
 const menuArea = document.getElementById('menu-area');
 const preloader = document.getElementById('preloader');
-const bgm = document.getElementById('bgm');
 const muteBtn = document.getElementById('mute-btn');
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-// --- 低遅延オーディオ設定 ---
+// --- 音声管理 (Web Audio APIに統一) ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+let bgmBuffer = null;
 let getSoundBuffer = null;
+let bgmSource = null;
+let bgmGain = null;
 
-async function loadGetSound() {
-  try {
-    const response = await fetch('get.mp3');
-    const arrayBuffer = await response.arrayBuffer();
-    getSoundBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-  } catch (e) { console.error("音声読み込み失敗:", e); }
+async function loadAudio(url) {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  return await audioCtx.decodeAudioData(arrayBuffer);
 }
 
-function silentPlay() {
-  if (!getSoundBuffer) return;
-  const source = audioCtx.createBufferSource();
-  const gain = audioCtx.createGain();
-  source.buffer = getSoundBuffer;
-  gain.gain.value = 0;
-  source.connect(gain);
-  gain.connect(audioCtx.destination);
-  source.start(0);
+// BGMの再生管理
+function playBGM() {
+  if (bgmSource) bgmSource.stop();
+  bgmSource = audioCtx.createBufferSource();
+  bgmSource.buffer = bgmBuffer;
+  bgmSource.loop = true;
+  bgmGain = audioCtx.createGain();
+  bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
+  bgmSource.connect(bgmGain);
+  bgmGain.connect(audioCtx.destination);
+  bgmSource.start(0);
+}
+
+function stopBGM() {
+  if (bgmSource) { bgmSource.stop(); bgmSource = null; }
 }
 
 function playGetSound() {
   if (!getSoundBuffer || state.isMuted) return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
   const source = audioCtx.createBufferSource();
   const gainNode = audioCtx.createGain();
   source.buffer = getSoundBuffer;
@@ -130,29 +135,12 @@ function playGetSound() {
   source.start(audioCtx.currentTime);
 }
 
-// --- メディアセッションの無効化 ---
-if ('mediaSession' in navigator) {
-  // 再生状態を「なし」に固定
-  navigator.mediaSession.playbackState = 'none';
-  // 全てのボタンアクションを無効化
-  const actions = ['play', 'pause', 'seekbackward', 'seekforward', 'previoustrack', 'nexttrack'];
-  actions.forEach(action => {
-    try { navigator.mediaSession.setActionHandler(action, null); } catch (e) {}
-  });
-}
-
-// --- 画面オフ時の再生防止徹底処理 ---
+// --- 画面オフ時の再生防止 ---
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
-    bgm.pause();
-    // 音声コンテキスト自体を一時停止させてロック画面への通知を断つ
     if (audioCtx.state !== 'closed') audioCtx.suspend();
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
-  } else if (document.visibilityState === 'visible') {
+  } else {
     if (audioCtx.state === 'suspended') audioCtx.resume();
-    if (state.active && !state.isMuted) {
-      bgm.play().catch(e => console.log("再開失敗:", e));
-    }
   }
 });
 
@@ -173,7 +161,7 @@ let spawnTimer = null;
 
 muteBtn.addEventListener('click', () => {
   state.isMuted = !state.isMuted;
-  bgm.muted = state.isMuted;
+  if (bgmGain) bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
   muteBtn.innerText = state.isMuted ? '🔇' : '🔊';
   if (audioCtx.state === 'suspended') audioCtx.resume();
 });
@@ -193,9 +181,11 @@ function preloadAllImages(imageObj, callback) {
   });
 }
 
+// 全資産の読み込み
 Promise.all([
   new Promise(res => preloadAllImages(IMAGES, res)),
-  loadGetSound()
+  loadAudio('bgm.mp3').then(b => bgmBuffer = b),
+  loadAudio('get.mp3').then(b => getSoundBuffer = b)
 ]).then(() => {
   loadingText.style.display = 'none';
   menuArea.style.display = 'block';
@@ -241,19 +231,16 @@ shareBtn.addEventListener('click', () => {
 });
 
 function startSequence() {
-  bgm.volume = isMobile ? 0.4 : 0.2;
-  bgm.currentTime = 0;
-  bgm.play().catch(e => console.log("再生失敗:", e));
   state.canStart = false;
   msgLayer.style.display = 'none';
   shareBtn.style.display = 'none';
   setMochikumaImage(IMAGES.NORMAL);
   countdownDisp.style.display = 'block';
   countdownDisp.innerText = 'Ready';
-  silentPlay();
+  
   setTimeout(() => {
     countdownDisp.innerText = 'Go!';
-    silentPlay();
+    playBGM(); // ここでBGM開始
     setTimeout(() => {
       countdownDisp.style.display = 'none';
       initGame();
@@ -342,7 +329,8 @@ function updateLife() {
 }
 
 function endGame(gameOverImg, typeName) {
-  state.active = false; bgm.pause();
+  state.active = false; 
+  stopBGM(); // BGM停止
   if (spawnTimer) clearTimeout(spawnTimer);
   document.querySelectorAll('.obj').forEach(o => o.remove());
   setMochikumaImage(gameOverImg);
