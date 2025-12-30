@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>もちくまの休日ハント</title>
   <style>
-    /* CSSは変更なし */
+    /* スタイル部分は変更なし */
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { background: #f0f0f0; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; }
     #game-wrap { width: 100vw; max-width: 450px; height: 100vh; height: 100dvh; position: relative; background: #eef6ff; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
@@ -95,10 +95,8 @@ const muteBtn = document.getElementById('mute-btn');
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-// --- 低遅延オーディオ設定（極限） ---
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
-  latencyHint: 'interactive'
-});
+// --- 低遅延オーディオ設定 ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
 let getSoundBuffer = null;
 
 async function loadGetSound() {
@@ -109,13 +107,12 @@ async function loadGetSound() {
   } catch (e) { console.error("音声読み込み失敗:", e); }
 }
 
-// 効果音の「喉鳴らし」：無音で一度再生してシステムを暖める
 function silentPlay() {
   if (!getSoundBuffer) return;
   const source = audioCtx.createBufferSource();
   const gain = audioCtx.createGain();
   source.buffer = getSoundBuffer;
-  gain.gain.value = 0; // 無音
+  gain.gain.value = 0;
   source.connect(gain);
   gain.connect(audioCtx.destination);
   source.start(0);
@@ -124,7 +121,6 @@ function silentPlay() {
 function playGetSound() {
   if (!getSoundBuffer || state.isMuted) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
-  
   const source = audioCtx.createBufferSource();
   const gainNode = audioCtx.createGain();
   source.buffer = getSoundBuffer;
@@ -133,6 +129,19 @@ function playGetSound() {
   gainNode.connect(audioCtx.destination);
   source.start(audioCtx.currentTime);
 }
+
+// --- 画面オフ時の再生防止処理 ---
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    // 画面が閉じられた/オフになったらBGM停止
+    bgm.pause();
+  } else if (document.visibilityState === 'visible') {
+    // 画面に戻ってきた時、ゲーム中かつミュートでなければ再開
+    if (state.active && !state.isMuted) {
+      bgm.play().catch(e => console.log("再開失敗:", e));
+    }
+  }
+});
 
 const IMAGES = {
   NORMAL: 'default.png', DODGE: 'yoke.png', HIT_REST: 'yasumi.png', KUMO: 'kumo.png',
@@ -228,13 +237,10 @@ function startSequence() {
   setMochikumaImage(IMAGES.NORMAL);
   countdownDisp.style.display = 'block';
   countdownDisp.innerText = 'Ready';
-  
-  // カウントダウン中に効果音を無音で空再生（喉鳴らし）
   silentPlay();
-  
   setTimeout(() => {
     countdownDisp.innerText = 'Go!';
-    silentPlay(); // Goのタイミングでもう一度
+    silentPlay();
     setTimeout(() => {
       countdownDisp.style.display = 'none';
       initGame();
