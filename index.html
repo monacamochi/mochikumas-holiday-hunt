@@ -22,10 +22,21 @@
     #mochikuma.dodging { transform: translate3d(50%, 0, 0); }
     
     #countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #555; z-index: 15; }
-    .obj { position: absolute; left: 50%; top: 0; padding: 10px 15px; border-radius: 8px; font-weight: bold; white-space: nowrap; z-index: 4; transform: translate3d(-50%, -100px, 0); will-change: transform; }
     
-    .job { background: #555; color: #fff; }
-    .rest { background: #ffeb3b; color: #333; }
+    /* オブジェクトの基本設定（画像を表示するため背景色を削除） */
+    .obj { 
+      position: absolute; 
+      left: 50%; 
+      top: 0; 
+      width: 80px; /* 画像の表示サイズに合わせて調整してください */
+      height: 80px; 
+      background-size: contain; 
+      background-repeat: no-repeat; 
+      background-position: center;
+      z-index: 4; 
+      transform: translate3d(-50%, -100px, 0); 
+      will-change: transform; 
+    }
     
     #ui-area { height: 140px; display: flex; align-items: center; justify-content: center; background: #f5faff; border-top: 1px solid #dee7ef; z-index: 10; padding-bottom: env(safe-area-inset-bottom); }
     #dodge-btn { width: 70%; height: 80px; font-size: 1.8rem; font-weight: bold; background: #0056b3; border: none; border-radius: 40px; color: #ffffff; outline: none; box-shadow: 0 4px 0 #003d7a; }
@@ -105,15 +116,21 @@ const preloader = document.getElementById('preloader');
 const bgm = document.getElementById('bgm');
 const muteBtn = document.getElementById('mute-btn');
 
+// 画像パスの設定
 const IMAGES = {
   NORMAL: 'default.png',
   DODGE:  'yoke.png',
   HIT_JOB: 'shigoto.png',
   HIT_REST: 'yasumi.png',
-  KUMO: 'kumo.png'
+  KUMO: 'kumo.png',
+  // 追加オブジェクト画像
+  SIGOTO: 'sigoto.png',
+  KAZI: 'kazi.png',
+  GAKKOU: 'gakkou.png',
+  KYUZITU: 'kyuzitu.png'
 };
 
-const NEGATIVE_WORDS = ['仕事', '学校', '家事'];
+const NEGATIVE_TYPES = [IMAGES.SIGOTO, IMAGES.KAZI, IMAGES.GAKKOU];
 
 let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: true, isMuted: false };
 let spawnTimer = null;
@@ -202,19 +219,20 @@ function initGame() {
 function spawn() {
   if(!state.active) return;
   const obj = document.createElement('div');
+  obj.className = 'obj';
   
-  // 確率 1:1 の設定 (Math.random() が 0.5 以上なら嫌なこと)
   const isNegative = Math.random() > 0.5;
+  let targetImg = "";
   
   if(isNegative) {
-    obj.className = 'obj job';
-    obj.innerText = NEGATIVE_WORDS[Math.floor(Math.random() * NEGATIVE_WORDS.length)];
+    targetImg = NEGATIVE_TYPES[Math.floor(Math.random() * NEGATIVE_TYPES.length)];
   } else {
-    obj.className = 'obj rest';
-    obj.innerText = '休日';
+    targetImg = IMAGES.KYUZITU;
   }
   
+  obj.style.backgroundImage = `url('${targetImg}')`;
   document.getElementById('game-field').appendChild(obj);
+
   let posY = -100;
   let hasChecked = false;
   const currentSpeed = Math.min(state.speed + (state.score / 25), 18);
