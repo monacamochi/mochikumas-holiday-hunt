@@ -10,6 +10,7 @@
     body { background: #f0f0f0; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; }
     #game-wrap { width: 100vw; max-width: 450px; height: 100vh; height: 100dvh; position: relative; background: #eef6ff; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
     
+    /* ステータスバー */
     #status { height: 60px; display: flex; align-items: center; padding: 0 15px; font-weight: bold; color: #666; background: #f5faff; border-bottom: 1px solid #dee7ef; z-index: 50; }
     #score { font-size: 0.9rem; white-space: nowrap; }
     .spacer { flex-grow: 1; }
@@ -17,30 +18,36 @@
     #life { display: flex; align-items: center; gap: 4px; color: #ff6b6b; font-size: 0.9rem; white-space: nowrap; }
     .heart-container { display: flex; gap: 2px; align-items: center; }
     .heart-icon { width: 22px; height: 22px; object-fit: contain; display: block; }
-
     #mute-btn { width: 30px; height: 30px; background-color: transparent; background-image: url('volume-ON.png'); background-size: contain; background-repeat: no-repeat; background-position: center; border: none; cursor: pointer; outline: none; display: block; pointer-events: auto; }
     
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
-    
-    /* 描画安定化（backface-visibilityを追加） */
+
+    /* 描画安定化とレイアウト */
     #mochikuma { 
       width: 120px; height: 132px; position: absolute; bottom: 40px; left: 50%; transform: translate3d(-50%, 0, 0); 
       background-size: contain; background-repeat: no-repeat; background-position: center bottom; 
-      transition: transform 0.1s ease-out; z-index: 5; 
-      will-change: transform, background-image;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
+      transition: transform 0.1s ease-out; z-index: 5; will-change: transform, background-image;
+      -webkit-backface-visibility: hidden; backface-visibility: hidden;
     }
     #mochikuma.dodging { transform: translate3d(50%, 0, 0); }
-    
-    /* 落ちてくるオブジェクトも安定化 */
+
+    /* カウントダウン表示（ここを修正・復元しました） */
+    #countdown { 
+      position: absolute; 
+      top: 40%; 
+      left: 50%; 
+      transform: translate(-50%, -50%); 
+      font-size: 4rem; 
+      font-weight: bold; 
+      color: #555; 
+      z-index: 15; 
+      white-space: nowrap;
+    }
+
     .obj { 
-      position: absolute; left: 50%; top: 0; width: 80px; height: 80px; 
-      background-size: contain; background-repeat: no-repeat; background-position: center; 
-      z-index: 4; transform: translate3d(-50%, -100px, 0); 
-      will-change: transform; 
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
+      position: absolute; left: 50%; top: 0; width: 80px; height: 80px; background-size: contain; background-repeat: no-repeat; background-position: center; 
+      z-index: 4; transform: translate3d(-50%, -100px, 0); will-change: transform; 
+      -webkit-backface-visibility: hidden; backface-visibility: hidden;
     }
 
     @keyframes poyon {
@@ -50,7 +57,7 @@
     }
 
     #msg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 90px; z-index: 20; pointer-events: none; }
-    #msg-content { pointer-events: auto; text-align: center; padding: 35px 20px; background-image: url('kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; background-color: transparent; border: none; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    #msg-content { pointer-events: auto; text-align: center; padding: 35px 20px; background-image: url('kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; background-color: transparent; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     #title-logo { max-width: 280px; height: auto; margin-bottom: 12px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); animation: poyon 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-origin: center; }
     #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; z-index: 100; }
     #rule-content { text-align: center; padding: 25px; background: #fff; border-radius: 12px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
@@ -64,7 +71,7 @@
     #dodge-btn { width: 70%; height: 80px; font-size: 1.8rem; font-weight: bold; background: #0056b3; border: none; border-radius: 40px; color: #ffffff; outline: none; box-shadow: 0 4px 0 #003d7a; }
     #dodge-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #003d7a; }
     
-    /* プリロード用の確実な保持設定 */
+    #loading-text { font-weight: bold; color: #aaa; padding: 30px; letter-spacing: 0.05em; }
     #preloader { position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
     #preloader img { width: 1px; height: 1px; }
   </style>
@@ -114,7 +121,6 @@
 </div>
 
 <script>
-// JavaScript側のロジックは変更なし（加速緩和・音量トグル・アニメーション維持）
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
@@ -338,7 +344,7 @@ function preloadAllImages(imageObj, callback) {
     const img = new Image();
     img.onload = img.onerror = () => { 
       loadedCount++; 
-      preloader.appendChild(img); // 子要素としてそのまま追加して保持
+      preloader.appendChild(img);
       if (loadedCount === urls.length) callback(); 
     };
     img.src = url;
