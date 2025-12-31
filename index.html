@@ -10,13 +10,13 @@
     body { background: #f0f0f0; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; }
     #game-wrap { width: 100vw; max-width: 450px; height: 100vh; height: 100dvh; position: relative; background: #eef6ff; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
     
-    /* ステータスバーのレイアウト調整（被り防止） */
+    /* ステータスバー：要素を左右に振り分け、音量を右端に */
     #status { 
       height: 60px; 
       display: flex; 
       justify-content: space-between; 
       align-items: center; 
-      padding: 0 15px;
+      padding: 0 10px;
       font-weight: bold; 
       color: #666; 
       background: #f5faff; 
@@ -24,12 +24,28 @@
       z-index: 10; 
     }
     
-    #score { flex: 1; font-size: 0.9rem; }
+    #score { font-size: 0.85rem; white-space: nowrap; }
     
-    /* 音量ボタンをステータスバー内に配置 */
+    /* 右側のアイテム（ライフと音量）をまとめる */
+    .status-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #life { 
+      display: flex; 
+      align-items: center; 
+      gap: 3px; 
+      color: #ff6b6b; 
+      font-size: 0.8rem;
+    }
+    .heart-container { display: flex; gap: 1px; align-items: center; }
+    .heart-icon { width: 18px; height: 18px; object-fit: contain; display: block; }
+
     #mute-btn { 
-      width: 28px; 
-      height: 28px; 
+      width: 26px; 
+      height: 26px; 
       background-color: transparent;
       background-image: url('volume-ON.png');
       background-size: contain;
@@ -38,21 +54,8 @@
       border: none; 
       cursor: pointer; 
       outline: none; 
-      margin: 0 10px;
     }
     
-    #life { 
-      flex: 1;
-      display: flex; 
-      align-items: center; 
-      justify-content: flex-end;
-      gap: 4px; 
-      color: #ff6b6b; 
-      font-size: 0.9rem;
-    }
-    .heart-container { display: flex; gap: 2px; align-items: center; margin-left: 2px; }
-    .heart-icon { width: 20px; height: 20px; object-fit: contain; display: block; }
-
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
     #mochikuma { width: 120px; height: 132px; position: absolute; bottom: 40px; left: 50%; transform: translate3d(-50%, 0, 0); background-size: contain; background-repeat: no-repeat; background-position: center bottom; transition: transform 0.1s ease-out; z-index: 5; will-change: transform; }
     #mochikuma.dodging { transform: translate3d(50%, 0, 0); }
@@ -96,9 +99,11 @@
 <div id="game-wrap">
   <div id="status">
     <div id="score">SCORE: 0</div>
-    <button id="mute-btn"></button>
-    <div id="life">
-      LIFE：<span id="heart-wrap" class="heart-container"></span>
+    <div class="status-right">
+      <div id="life">
+        LIFE：<span id="heart-wrap" class="heart-container"></span>
+      </div>
+      <button id="mute-btn"></button>
     </div>
   </div>
   <div id="game-field">
@@ -135,7 +140,7 @@
 </div>
 
 <script>
-// ロジック部分は前回のものを継承
+// ロジック部分は変更なし
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
