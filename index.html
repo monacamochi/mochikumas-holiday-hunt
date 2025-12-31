@@ -21,10 +21,10 @@
     .obj { position: absolute; left: 50%; top: 0; width: 80px; height: 80px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 4; transform: translate3d(-50%, -100px, 0); will-change: transform; }
     
     #msg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 90px; z-index: 20; }
-    #msg-content { text-align: center; padding: 40px 30px; background-image: url('kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; background-color: transparent; border: none; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    #msg-content { text-align: center; padding: 40px 20px; background-image: url('kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; background-color: transparent; border: none; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     
-    /* ロゴ画像のスタイル */
-    #title-logo { max-width: 220px; height: auto; margin-bottom: 10px; display: block; }
+    /* ロゴをさらに大きく調整 */
+    #title-logo { max-width: 280px; height: auto; margin-bottom: 15px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
     
     #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; z-index: 30; }
     #rule-content { text-align: center; padding: 25px; background: #fff; border-radius: 12px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
@@ -84,6 +84,7 @@
 </div>
 
 <script>
+// (JavaScriptロジックは前回のタイトルリセット版をそのまま継承しています)
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
@@ -277,7 +278,6 @@ function endGame(gameOverImg, typeName) {
   document.querySelectorAll('.obj').forEach(o => o.remove());
   setMochikumaImage(gameOverImg);
   
-  // 結果画面の表示
   titleLogo.style.display = 'none';
   msgText.style.display = 'block';
   msgText.innerHTML = (typeName === '休日' ? `休日が足りない…` : `${typeName}には勝てなかった…`) + `<br>SCORE: ${state.score}`;
@@ -294,7 +294,6 @@ function backToTitle() {
   state.score = 0; state.life = 3;
   scoreDisp.innerText = `SCORE: 0`; updateLife();
   
-  // タイトル画面の表示に戻す
   titleLogo.style.display = 'block';
   msgText.style.display = 'none';
   
