@@ -12,9 +12,10 @@
     
     #status { height: 60px; display: flex; justify-content: space-around; align-items: center; font-weight: bold; color: #666; background: #f5faff; border-bottom: 1px solid #dee7ef; z-index: 10; }
     
-    /* ライフ画像のスタイル */
-    #life { display: flex; gap: 4px; align-items: center; }
-    .heart-icon { width: 24px; height: 24px; object-fit: contain; }
+    /* ライフ：テキストと画像の並び調整 */
+    #life { display: flex; align-items: center; gap: 4px; }
+    .heart-container { display: flex; gap: 2px; align-items: center; margin-left: 2px; }
+    .heart-icon { width: 22px; height: 22px; object-fit: contain; display: block; }
 
     #mute-btn { position: absolute; top: 15px; right: 15px; width: 30px; height: 30px; background: none; border: none; font-size: 1.5rem; cursor: pointer; z-index: 30; outline: none; }
     
@@ -62,7 +63,9 @@
   <button id="mute-btn">🔊</button>
   <div id="status">
     <div id="score">SCORE: 0</div>
-    <div id="life"></div>
+    <div id="life">
+      LIFE：<span id="heart-wrap" class="heart-container"></span>
+    </div>
   </div>
   <div id="game-field">
     <div id="mochikuma"></div>
@@ -98,6 +101,7 @@
 </div>
 
 <script>
+// ロジック部分は前回のものを継承し、updateLifeのみ変更
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
@@ -106,7 +110,7 @@ const countdownDisp = document.getElementById('countdown');
 const msgText = document.getElementById('msg-text');
 const titleLogo = document.getElementById('title-logo');
 const scoreDisp = document.getElementById('score');
-const lifeDisp = document.getElementById('life');
+const heartWrap = document.getElementById('heart-wrap'); // ここに変更
 const startBtn = document.getElementById('start-btn');
 const ruleBtn = document.getElementById('rule-btn');
 const shareBtn = document.getElementById('share-btn');
@@ -281,14 +285,13 @@ function initGame() {
   spawn();
 }
 
-// ライフ表示を画像で更新
 function updateLife() {
-  lifeDisp.innerHTML = '';
+  heartWrap.innerHTML = '';
   for (let i = 0; i < 3; i++) {
     const img = document.createElement('img');
     img.className = 'heart-icon';
     img.src = i < state.life ? IMAGES.HEART_A : IMAGES.HEART_B;
-    lifeDisp.appendChild(img);
+    heartWrap.appendChild(img);
   }
 }
 
@@ -350,7 +353,7 @@ Promise.all([
 ]).then(() => {
   loadingText.style.display = 'none'; menuArea.style.display = 'block';
   setMochikumaImage(IMAGES.NORMAL);
-  updateLife(); // 初期表示
+  updateLife();
 });
 
 ruleBtn.addEventListener('click', () => ruleLayer.style.display = 'flex');
