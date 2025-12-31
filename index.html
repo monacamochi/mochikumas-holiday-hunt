@@ -12,8 +12,8 @@
     
     #status { height: 60px; display: flex; justify-content: space-around; align-items: center; font-weight: bold; color: #666; background: #f5faff; border-bottom: 1px solid #dee7ef; z-index: 10; }
     
-    /* ライフ：テキストと画像の並び調整 */
-    #life { display: flex; align-items: center; gap: 4px; }
+    /* ライフ：文字色を赤に戻し、画像と並べる */
+    #life { display: flex; align-items: center; gap: 4px; color: #ff6b6b; }
     .heart-container { display: flex; gap: 2px; align-items: center; margin-left: 2px; }
     .heart-icon { width: 22px; height: 22px; object-fit: contain; display: block; }
 
@@ -101,7 +101,7 @@
 </div>
 
 <script>
-// ロジック部分は前回のものを継承し、updateLifeのみ変更
+// ロジック部分は変更なし（updateLifeにて画像を更新）
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
@@ -110,7 +110,7 @@ const countdownDisp = document.getElementById('countdown');
 const msgText = document.getElementById('msg-text');
 const titleLogo = document.getElementById('title-logo');
 const scoreDisp = document.getElementById('score');
-const heartWrap = document.getElementById('heart-wrap'); // ここに変更
+const heartWrap = document.getElementById('heart-wrap');
 const startBtn = document.getElementById('start-btn');
 const ruleBtn = document.getElementById('rule-btn');
 const shareBtn = document.getElementById('share-btn');
