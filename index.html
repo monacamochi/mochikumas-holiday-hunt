@@ -10,7 +10,6 @@
     body { background: #f0f0f0; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; }
     #game-wrap { width: 100vw; max-width: 450px; height: 100vh; height: 100dvh; position: relative; background: #eef6ff; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
     
-    /* ステータスバー：要素を左右端に完全に分ける */
     #status { 
       height: 60px; 
       display: flex; 
@@ -24,18 +23,14 @@
     }
     
     #score { font-size: 0.9rem; white-space: nowrap; }
-
-    /* 中央の余白：これで左右に押し広げる */
     .spacer { flex-grow: 1; }
 
-    /* 右側のグループ：ライフと音量を固定 */
     .status-right {
       display: flex;
       align-items: center;
-      gap: 12px; /* 要素間の距離を確保 */
+      gap: 12px;
     }
 
-    /* ライフ：文字色とサイズを維持 */
     #life { 
       display: flex; 
       align-items: center; 
@@ -47,18 +42,18 @@
     .heart-container { display: flex; gap: 2px; align-items: center; }
     .heart-icon { width: 22px; height: 22px; object-fit: contain; display: block; }
 
-    /* 音量ボタン：サイズを戻して右端に */
     #mute-btn { 
       width: 30px; 
       height: 30px; 
       background-color: transparent;
-      background-image: url('volume-ON.png');
+      background-image: url('volume-ON.png'); /* 初期表示 */
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
       border: none; 
       cursor: pointer; 
       outline: none; 
+      display: block;
     }
     
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
@@ -109,7 +104,7 @@
       <div id="life">
         LIFE：<span id="heart-wrap" class="heart-container"></span>
       </div>
-      <button id="mute-btn"></button>
+      <button id="mute-btn" type="button"></button>
     </div>
   </div>
   <div id="game-field">
@@ -146,7 +141,6 @@
 </div>
 
 <script>
-// ロジック部分は変更なし
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
@@ -372,12 +366,16 @@ function backToTitle() {
   setMochikumaImage(IMAGES.NORMAL);
 }
 
-muteBtn.addEventListener('click', () => {
+// ミュート切り替え：明示的に要素を指定して処理
+muteBtn.onclick = () => {
   state.isMuted = !state.isMuted;
   if (bgmGain) bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
+  
+  // 背景画像を確実に切り替え
   muteBtn.style.backgroundImage = `url('${state.isMuted ? IMAGES.VOL_OFF : IMAGES.VOL_ON}')`;
+  
   if (audioCtx.state === 'suspended') audioCtx.resume();
-});
+};
 
 function preloadAllImages(imageObj, callback) {
   const urls = Object.values(imageObj); let loadedCount = 0;
