@@ -12,12 +12,27 @@
     
     #status { height: 60px; display: flex; justify-content: space-around; align-items: center; font-weight: bold; color: #666; background: #f5faff; border-bottom: 1px solid #dee7ef; z-index: 10; }
     
-    /* ライフ：文字色を赤に戻し、画像と並べる */
     #life { display: flex; align-items: center; gap: 4px; color: #ff6b6b; }
     .heart-container { display: flex; gap: 2px; align-items: center; margin-left: 2px; }
     .heart-icon { width: 22px; height: 22px; object-fit: contain; display: block; }
 
-    #mute-btn { position: absolute; top: 15px; right: 15px; width: 30px; height: 30px; background: none; border: none; font-size: 1.5rem; cursor: pointer; z-index: 30; outline: none; }
+    /* 音量ボタンの画像化 */
+    #mute-btn { 
+      position: absolute; 
+      top: 15px; 
+      right: 15px; 
+      width: 32px; 
+      height: 32px; 
+      background-color: transparent;
+      background-image: url('volume-ON.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      border: none; 
+      cursor: pointer; 
+      z-index: 30; 
+      outline: none; 
+    }
     
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
     #mochikuma { width: 120px; height: 132px; position: absolute; bottom: 40px; left: 50%; transform: translate3d(-50%, 0, 0); background-size: contain; background-repeat: no-repeat; background-position: center bottom; transition: transform 0.1s ease-out; z-index: 5; will-change: transform; }
@@ -60,7 +75,7 @@
 <body>
 <div id="preloader"></div>
 <div id="game-wrap">
-  <button id="mute-btn">🔊</button>
+  <button id="mute-btn"></button>
   <div id="status">
     <div id="score">SCORE: 0</div>
     <div id="life">
@@ -101,7 +116,6 @@
 </div>
 
 <script>
-// ロジック部分は変更なし（updateLifeにて画像を更新）
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
@@ -162,6 +176,7 @@ const IMAGES = {
   SIGOTO: 'sigoto.png', KAZI: 'kazi.png', GAKKOU: 'gakkou.png', KYUZITU: 'kyuzitu.png',
   GET: 'default-get.png', TITLE: 'title.png',
   HEART_A: 'heart-A.png', HEART_B: 'heart-B.png',
+  VOL_ON: 'volume-ON.png', VOL_OFF: 'volume-OFF.png',
   GO_SIGOTO: 'gameover-shigoto.png', GO_KAZI: 'gameover-kazi.png', GO_GAKKOU: 'gameover-gakkou.png'
 };
 
@@ -326,10 +341,14 @@ function backToTitle() {
   setMochikumaImage(IMAGES.NORMAL);
 }
 
+// ミュートボタンの画像切り替え
 muteBtn.addEventListener('click', () => {
   state.isMuted = !state.isMuted;
   if (bgmGain) bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
-  muteBtn.innerText = state.isMuted ? '🔇' : '🔊';
+  
+  // 背景画像を切り替え
+  muteBtn.style.backgroundImage = `url('${state.isMuted ? IMAGES.VOL_OFF : IMAGES.VOL_ON}')`;
+  
   if (audioCtx.state === 'suspended') audioCtx.resume();
 });
 
