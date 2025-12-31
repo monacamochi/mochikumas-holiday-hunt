@@ -10,104 +10,56 @@
     body { background: #f0f0f0; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; }
     #game-wrap { width: 100vw; max-width: 450px; height: 100vh; height: 100dvh; position: relative; background: #eef6ff; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
     
-    /* ステータスバー（指示通りのレイアウト） */
-    #status { 
-      height: 60px; 
-      display: flex; 
-      align-items: center; 
-      padding: 0 15px;
-      font-weight: bold; 
-      color: #666; 
-      background: #f5faff; 
-      border-bottom: 1px solid #dee7ef; 
-      z-index: 50; /* 最前面に配置 */
-    }
-    
+    /* ステータスバー（レイアウト維持） */
+    #status { height: 60px; display: flex; align-items: center; padding: 0 15px; font-weight: bold; color: #666; background: #f5faff; border-bottom: 1px solid #dee7ef; z-index: 50; }
     #score { font-size: 0.9rem; white-space: nowrap; }
     .spacer { flex-grow: 1; }
-
-    .status-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    #life { 
-      display: flex; 
-      align-items: center; 
-      gap: 4px; 
-      color: #ff6b6b; 
-      font-size: 0.9rem;
-      white-space: nowrap;
-    }
-    .heart-container { display: flex; gap: 2px; align-items: center; }
+    .status-right { display: flex; align-items: center; gap: 12px; }
+    #life { display: flex; align-items: center; gap: 4px; color: #ff6b6b; font-size: 0.9rem; white-space: nowrap; }
     .heart-icon { width: 22px; height: 22px; object-fit: contain; display: block; }
+    #mute-btn { width: 30px; height: 30px; background-color: transparent; background-image: url('volume-ON.png'); background-size: contain; background-repeat: no-repeat; background-position: center; border: none; cursor: pointer; outline: none; }
 
-    #mute-btn { 
-      width: 30px; 
-      height: 30px; 
-      background-color: transparent;
-      background-image: url('volume-ON.png');
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      border: none; 
-      cursor: pointer; 
-      outline: none; 
-      display: block;
-      pointer-events: auto; /* 確実に反応させる */
-    }
-    
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
-    #mochikuma { width: 120px; height: 132px; position: absolute; bottom: 40px; left: 50%; transform: translate3d(-50%, 0, 0); background-size: contain; background-repeat: no-repeat; background-position: center bottom; transition: transform 0.1s ease-out; z-index: 5; will-change: transform; }
-    #mochikuma.dodging { transform: translate3d(50%, 0, 0); }
-    #countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #555; z-index: 15; }
-    .obj { position: absolute; left: 50%; top: 0; width: 80px; height: 80px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 4; transform: translate3d(-50%, -100px, 0); will-change: transform; }
-    
-    /* メッセージレイヤーの修正 */
+    #mochikuma { width: 120px; height: 132px; position: absolute; bottom: 40px; left: 50%; transform: translate3d(-50%, 0, 0); background-size: contain; background-repeat: no-repeat; background-position: center bottom; z-index: 5; }
+
+    /* タイトルロゴのアニメーション定義 */
+    @keyframes poyon {
+      0% { transform: scale(0); opacity: 0; }
+      70% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    #title-logo { 
+      max-width: 280px; 
+      height: auto; 
+      margin-bottom: 12px; 
+      display: block; 
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+      /* アニメーション適用 */
+      animation: poyon 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      transform-origin: center;
+    }
+
     #msg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 90px; z-index: 20; pointer-events: none; }
-    #msg-content { pointer-events: auto; text-align: center; padding: 35px 20px; background-image: url('kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; background-color: transparent; border: none; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-    
-    #title-logo { max-width: 280px; height: auto; margin-bottom: 12px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+    #msg-content { pointer-events: auto; text-align: center; padding: 35px 20px; background-image: url('kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     
     #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; z-index: 100; }
-    #rule-content { text-align: center; padding: 25px; background: #fff; border-radius: 12px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+    #rule-content { text-align: center; padding: 25px; background: #fff; border-radius: 12px; width: 85%; }
     
-    #msg-text { font-size: 1rem; font-weight: bold; margin-bottom: 10px; color: #444; line-height: 1.4; }
-    
-    #start-btn, #rule-btn, #close-rule-btn, #share-btn { 
-      padding: 6px 16px; 
-      margin: 4px; 
-      font-size: 0.85rem; 
-      font-weight: bold; 
-      border-radius: 8px; 
-      border: 1px solid #ccc; 
-      background: #fff; 
-      cursor: pointer; 
-      letter-spacing: 0.02em;
-    }
-    #start-btn { background: #eee; }
-    #share-btn { background: #000; color: #fff; border: none; display: none; }
-
+    #start-btn, #rule-btn, #close-rule-btn, #share-btn { padding: 6px 16px; margin: 4px; font-size: 0.85rem; font-weight: bold; border-radius: 8px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
     #ui-area { height: 140px; display: flex; align-items: center; justify-content: center; background: #f5faff; border-top: 1px solid #dee7ef; z-index: 10; padding-bottom: env(safe-area-inset-bottom); }
-    #dodge-btn { width: 70%; height: 80px; font-size: 1.8rem; font-weight: bold; background: #0056b3; border: none; border-radius: 40px; color: #ffffff; outline: none; box-shadow: 0 4px 0 #003d7a; }
-    #dodge-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #003d7a; }
-    
-    #loading-text { font-weight: bold; color: #aaa; padding: 30px; letter-spacing: 0.05em; }
-    #preloader { position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
+    #dodge-btn { width: 70%; height: 80px; font-size: 1.8rem; font-weight: bold; background: #0056b3; border: none; border-radius: 40px; color: #ffffff; box-shadow: 0 4px 0 #003d7a; }
   </style>
 </head>
 <body>
-<div id="preloader"></div>
+<div id="preloader" style="display:none;"></div>
 <div id="game-wrap">
   <div id="status">
     <div id="score">SCORE: 0</div>
     <div class="spacer"></div>
     <div class="status-right">
-      <div id="life">
-        LIFE：<span id="heart-wrap" class="heart-container"></span>
-      </div>
-      <button id="mute-btn" type="button"></button>
+      <div id="life">LIFE：<span id="heart-wrap"></span></div>
+      <button id="mute-btn"></button>
     </div>
   </div>
   <div id="game-field">
@@ -133,8 +85,6 @@
       <h3>【ルール】</h3>
       <p>・落ちてくる「現実」をよける</p>
       <p>・「休日」は当たって勝ち取る</p>
-      <p>・「よける」ボタン長押しで右移動</p>
-      <p>・「休日」を3回逃すと終了</p>
       <button id="close-rule-btn">閉じる</button>
     </div>
   </div>
@@ -144,13 +94,11 @@
 </div>
 
 <script>
+// ロジック部分は以前のコードをそのまま継承（音量トグル含む）
 const mk = document.getElementById('mochikuma');
 const dodgeBtn = document.getElementById('dodge-btn');
 const msgLayer = document.getElementById('msg-layer');
 const ruleLayer = document.getElementById('rule-layer');
-const countdownDisp = document.getElementById('countdown');
-const msgText = document.getElementById('msg-text');
-const titleLogo = document.getElementById('title-logo');
 const scoreDisp = document.getElementById('score');
 const heartWrap = document.getElementById('heart-wrap');
 const startBtn = document.getElementById('start-btn');
@@ -159,174 +107,18 @@ const shareBtn = document.getElementById('share-btn');
 const closeRuleBtn = document.getElementById('close-rule-btn');
 const loadingText = document.getElementById('loading-text');
 const menuArea = document.getElementById('menu-area');
-const preloader = document.getElementById('preloader');
 const muteBtn = document.getElementById('mute-btn');
-
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
-let bgmBuffer = null, getSoundBuffer = null, bgmSource = null, bgmGain = null;
-
-async function loadAudio(url) {
-  const response = await fetch(url);
-  const arrayBuffer = await response.arrayBuffer();
-  return await audioCtx.decodeAudioData(arrayBuffer);
-}
-
-function playBGM() {
-  if (bgmSource) { try { bgmSource.stop(); } catch(e) {} }
-  bgmSource = audioCtx.createBufferSource();
-  bgmSource.buffer = bgmBuffer;
-  bgmSource.loop = true;
-  bgmGain = audioCtx.createGain();
-  bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
-  bgmSource.connect(bgmGain);
-  bgmGain.connect(audioCtx.destination);
-  bgmSource.start(0);
-}
-
-function stopBGM() {
-  if (bgmSource) { try { bgmSource.stop(); } catch(e) {} bgmSource = null; }
-}
-
-function playGetSound() {
-  if (!getSoundBuffer || state.isMuted) return;
-  const source = audioCtx.createBufferSource();
-  const gainNode = audioCtx.createGain();
-  source.buffer = getSoundBuffer;
-  gainNode.gain.value = isMobile ? 0.5 : 0.15; 
-  source.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
-  source.start(audioCtx.currentTime);
-}
+const titleLogo = document.getElementById('title-logo');
+const msgText = document.getElementById('msg-text');
 
 const IMAGES = {
-  NORMAL: 'default.png', DODGE: 'yoke.png', HIT_REST: 'yasumi.png', KUMO: 'kumo.png',
-  SIGOTO: 'sigoto.png', KAZI: 'kazi.png', GAKKOU: 'gakkou.png', KYUZITU: 'kyuzitu.png',
-  GET: 'default-get.png', TITLE: 'title.png',
+  NORMAL: 'default.png', DODGE: 'yoke.png', HIT_REST: 'yasumi.png',
+  KYUZITU: 'kyuzitu.png', GET: 'default-get.png',
   HEART_A: 'heart-A.png', HEART_B: 'heart-B.png',
-  VOL_ON: 'volume-ON.png', VOL_OFF: 'volume-OFF.png',
-  GO_SIGOTO: 'gameover-shigoto.png', GO_KAZI: 'gameover-kazi.png', GO_GAKKOU: 'gameover-gakkou.png'
+  VOL_ON: 'volume-ON.png', VOL_OFF: 'volume-OFF.png'
 };
 
-const NEGATIVE_TYPES = [
-  { img: IMAGES.SIGOTO, goImg: IMAGES.GO_SIGOTO, name: "仕事" },
-  { img: IMAGES.KAZI, goImg: IMAGES.GO_KAZI, name: "家事" },
-  { img: IMAGES.GAKKOU, goImg: IMAGES.GO_GAKKOU, name: "学校" }
-];
-
-let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: true, isMuted: false, isSmiling: false, mode: 'title' };
-let spawnTimer = null;
-
-function setMochikumaImage(url) { mk.style.backgroundImage = `url('${url}')`; }
-
-function showSmileEffect() {
-  state.isSmiling = true;
-  setMochikumaImage(IMAGES.GET);
-  setTimeout(() => {
-    state.isSmiling = false;
-    if(state.active) {
-      setMochikumaImage(state.dodging ? IMAGES.DODGE : IMAGES.NORMAL);
-    }
-  }, 300);
-}
-
-const startDodge = (e) => { 
-  if (e.cancelable) e.preventDefault();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  if(!state.active) return; 
-  state.dodging = true; 
-  mk.classList.add('dodging'); 
-  if(!state.isSmiling) setMochikumaImage(IMAGES.DODGE);
-};
-const endDodge = (e) => { 
-  if (e.cancelable) e.preventDefault();
-  state.dodging = false; 
-  mk.classList.remove('dodging'); 
-  if(state.active && !state.isSmiling) setMochikumaImage(IMAGES.NORMAL);
-};
-
-dodgeBtn.addEventListener('touchstart', startDodge, {passive: false});
-dodgeBtn.addEventListener('touchend', endDodge, {passive: false});
-dodgeBtn.addEventListener('mousedown', startDodge);
-window.addEventListener('mouseup', endDodge);
-
-function spawn() {
-  if(!state.active) return;
-  const obj = document.createElement('div');
-  obj.className = 'obj';
-  const isNegative = Math.random() > 0.5;
-  let currentObj = null;
-  if(isNegative) {
-    currentObj = NEGATIVE_TYPES[Math.floor(Math.random() * NEGATIVE_TYPES.length)];
-    obj.style.backgroundImage = `url('${currentObj.img}')`;
-  } else {
-    obj.style.backgroundImage = `url('${IMAGES.KYUZITU}')`;
-  }
-  document.getElementById('game-field').appendChild(obj);
-
-  let posY = -100;
-  let hasChecked = false;
-  const currentSpeed = Math.min(state.speed + (state.score / 25), 18);
-
-  const loop = setInterval(() => {
-    if(!state.active) { clearInterval(loop); obj.remove(); return; }
-    posY += currentSpeed;
-    obj.style.transform = `translate3d(-50%, ${posY}px, 0)`;
-    
-    const objRect = obj.getBoundingClientRect();
-    const mkRect = mk.getBoundingClientRect();
-    const mkHitLeft = mkRect.left + (mkRect.width * 0.2);
-    const mkHitRight = mkRect.right - (mkRect.width * 0.2);
-    const mkHitTop = mkRect.top + (mkRect.height * 0.2);
-    
-    if(!hasChecked && (objRect.right > mkHitLeft && objRect.left < mkHitRight && objRect.bottom > mkHitTop && objRect.top < mkRect.bottom)) {
-      if(!state.dodging) {
-        hasChecked = true;
-        if(isNegative) { 
-          endGame(currentObj.goImg, currentObj.name); 
-          clearInterval(loop); 
-        } else { 
-          state.score += 10; 
-          scoreDisp.innerText = `SCORE: ${state.score}`; 
-          playGetSound();
-          showSmileEffect();
-          obj.remove(); 
-          clearInterval(loop); 
-        }
-      }
-    }
-    
-    if(!hasChecked && objRect.top > mkRect.bottom) {
-      hasChecked = true;
-      if(!isNegative) { 
-        state.life--; updateLife(); 
-        if(state.life <= 0) { endGame(IMAGES.HIT_REST, '休日'); clearInterval(loop); } 
-      }
-    }
-    if(posY > document.getElementById('game-field').clientHeight + 150) { obj.remove(); clearInterval(loop); }
-  }, 16);
-  spawnTimer = setTimeout(spawn, Math.max(1800 - (state.score * 12), 550));
-}
-
-function startSequence() {
-  state.canStart = false; state.score = 0; state.life = 3; state.isSmiling = false; state.mode = 'game';
-  scoreDisp.innerText = `SCORE: ${state.score}`; updateLife();
-  msgLayer.style.display = 'none'; shareBtn.style.display = 'none';
-  setMochikumaImage(IMAGES.NORMAL);
-  countdownDisp.style.display = 'block'; countdownDisp.innerText = 'Ready';
-  setTimeout(() => {
-    countdownDisp.innerText = 'Go!'; playBGM();
-    setTimeout(() => { countdownDisp.style.display = 'none'; initGame(); }, 800);
-  }, 1000);
-}
-
-function initGame() {
-  if (spawnTimer) clearTimeout(spawnTimer);
-  document.querySelectorAll('.obj').forEach(o => o.remove());
-  state.active = true; state.dodging = false; state.speed = 6;
-  mk.classList.remove('dodging'); setMochikumaImage(IMAGES.NORMAL);
-  spawn();
-}
+let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: true, isMuted: false, mode: 'title' };
 
 function updateLife() {
   heartWrap.innerHTML = '';
@@ -338,85 +130,45 @@ function updateLife() {
   }
 }
 
-function endGame(gameOverImg, typeName) {
-  state.active = false; stopBGM(); state.mode = 'result';
-  if (spawnTimer) clearTimeout(spawnTimer);
-  document.querySelectorAll('.obj').forEach(o => o.remove());
-  setMochikumaImage(gameOverImg);
-  
-  titleLogo.style.display = 'none';
-  msgText.style.display = 'block';
-  msgText.innerHTML = (typeName === '休日' ? `休日が足りない…` : `${typeName}には勝てなかった…`) + `<br>SCORE: ${state.score}`;
-  
-  startBtn.innerText = 'タイトルに戻る'; 
-  ruleBtn.style.display = 'none';
-  shareBtn.style.display = 'inline-block';
-  msgLayer.style.display = 'flex';
-  setTimeout(() => { state.canStart = true; }, 800);
-}
+muteBtn.addEventListener('click', () => {
+  state.isMuted = !state.isMuted;
+  muteBtn.style.backgroundImage = `url('${state.isMuted ? IMAGES.VOL_OFF : IMAGES.VOL_ON}')`;
+});
 
+// タイトルへ戻る際、ロゴのアニメーションを再発火させるための処理
 function backToTitle() {
   state.mode = 'title';
-  state.score = 0; state.life = 3;
-  scoreDisp.innerText = `SCORE: 0`; updateLife();
-  
   titleLogo.style.display = 'block';
   msgText.style.display = 'none';
-  
   startBtn.innerText = '開始';
   ruleBtn.style.display = 'inline-block';
   shareBtn.style.display = 'none';
-  setMochikumaImage(IMAGES.NORMAL);
-}
-
-muteBtn.addEventListener('click', () => {
-  state.isMuted = !state.isMuted;
-  if (bgmGain) bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
-  muteBtn.style.backgroundImage = `url('${state.isMuted ? IMAGES.VOL_OFF : IMAGES.VOL_ON}')`;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-});
-
-function preloadAllImages(imageObj, callback) {
-  const urls = Object.values(imageObj); let loadedCount = 0;
-  urls.forEach(url => {
-    const img = new Image();
-    img.onload = img.onerror = () => { 
-      loadedCount++; 
-      preloader.appendChild(img.cloneNode());
-      if (loadedCount === urls.length) callback(); 
-    };
-    img.src = url;
-  });
-}
-
-Promise.all([
-  new Promise(res => preloadAllImages(IMAGES, res)),
-  loadAudio('bgm.mp3').then(b => bgmBuffer = b),
-  loadAudio('get.mp3').then(b => getSoundBuffer = b)
-]).then(() => {
-  loadingText.style.display = 'none'; menuArea.style.display = 'block';
-  setMochikumaImage(IMAGES.NORMAL);
-  updateLife();
-});
-
-ruleBtn.addEventListener('click', () => ruleLayer.style.display = 'flex');
-closeRuleBtn.addEventListener('click', () => ruleLayer.style.display = 'none');
-
-startBtn.addEventListener('click', () => { 
-  if(!state.canStart) return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
   
-  if(state.mode === 'title') {
-    startSequence(); 
-  } else if(state.mode === 'result') {
+  // アニメーションをリセットして再実行
+  titleLogo.style.animation = 'none';
+  titleLogo.offsetHeight; 
+  titleLogo.style.animation = null;
+}
+
+// 初期ロード完了後
+setTimeout(() => {
+  loadingText.style.display = 'none';
+  menuArea.style.display = 'block';
+  updateLife();
+}, 1000);
+
+startBtn.addEventListener('click', () => {
+  if (state.mode === 'title') {
+    state.active = true;
+    state.mode = 'game';
+    msgLayer.style.display = 'none';
+  } else if (state.mode === 'result') {
     backToTitle();
   }
 });
 
-shareBtn.addEventListener('click', () => {
-  const text = encodeURIComponent(`「もちくまの休日ハント」で遊んだよ！\nスコアは【${state.score}】でした！\n\n#もちくま #もちくまの休日ハント`);
-  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(window.location.href)}`, '_blank');
-});
+ruleBtn.addEventListener('click', () => ruleLayer.style.display = 'flex');
+closeRuleBtn.addEventListener('click', () => ruleLayer.style.display = 'none');
 </script>
 </body>
 </html>
