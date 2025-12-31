@@ -10,6 +10,7 @@
     body { background: #f0f0f0; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; }
     #game-wrap { width: 100vw; max-width: 450px; height: 100vh; height: 100dvh; position: relative; background: #eef6ff; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
     
+    /* ステータスバー（指示通りのレイアウト） */
     #status { 
       height: 60px; 
       display: flex; 
@@ -19,7 +20,7 @@
       color: #666; 
       background: #f5faff; 
       border-bottom: 1px solid #dee7ef; 
-      z-index: 10; 
+      z-index: 50; /* 最前面に配置 */
     }
     
     #score { font-size: 0.9rem; white-space: nowrap; }
@@ -46,7 +47,7 @@
       width: 30px; 
       height: 30px; 
       background-color: transparent;
-      background-image: url('volume-ON.png'); /* 初期表示 */
+      background-image: url('volume-ON.png');
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
@@ -54,6 +55,7 @@
       cursor: pointer; 
       outline: none; 
       display: block;
+      pointer-events: auto; /* 確実に反応させる */
     }
     
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
@@ -62,12 +64,13 @@
     #countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #555; z-index: 15; }
     .obj { position: absolute; left: 50%; top: 0; width: 80px; height: 80px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 4; transform: translate3d(-50%, -100px, 0); will-change: transform; }
     
-    #msg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 90px; z-index: 20; }
-    #msg-content { text-align: center; padding: 35px 20px; background-image: url('kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; background-color: transparent; border: none; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    /* メッセージレイヤーの修正 */
+    #msg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 90px; z-index: 20; pointer-events: none; }
+    #msg-content { pointer-events: auto; text-align: center; padding: 35px 20px; background-image: url('kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; background-color: transparent; border: none; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     
     #title-logo { max-width: 280px; height: auto; margin-bottom: 12px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
     
-    #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; z-index: 30; }
+    #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; z-index: 100; }
     #rule-content { text-align: center; padding: 25px; background: #fff; border-radius: 12px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
     
     #msg-text { font-size: 1rem; font-weight: bold; margin-bottom: 10px; color: #444; line-height: 1.4; }
@@ -366,16 +369,12 @@ function backToTitle() {
   setMochikumaImage(IMAGES.NORMAL);
 }
 
-// ミュート切り替え：明示的に要素を指定して処理
-muteBtn.onclick = () => {
+muteBtn.addEventListener('click', () => {
   state.isMuted = !state.isMuted;
   if (bgmGain) bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
-  
-  // 背景画像を確実に切り替え
   muteBtn.style.backgroundImage = `url('${state.isMuted ? IMAGES.VOL_OFF : IMAGES.VOL_ON}')`;
-  
   if (audioCtx.state === 'suspended') audioCtx.resume();
-};
+});
 
 function preloadAllImages(imageObj, callback) {
   const urls = Object.values(imageObj); let loadedCount = 0;
