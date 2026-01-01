@@ -12,7 +12,7 @@
     
     /* ステータスバー */
     #status { height: 60px; display: flex; align-items: center; padding: 0 15px; font-weight: bold; color: #666; background: #f5faff; border-bottom: 1px solid #dee7ef; z-index: 50; }
-    #score { font-size: 0.9rem; white-space: nowrap; color: #497297; } /* スコアの色を変更 */
+    #score { font-size: 0.9rem; white-space: nowrap; color: #497297; }
     .spacer { flex-grow: 1; }
     .status-right { display: flex; align-items: center; gap: 12px; }
     #life { display: flex; align-items: center; gap: 4px; color: #ff6b6b; font-size: 0.9rem; white-space: nowrap; }
@@ -71,14 +71,13 @@
     #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; z-index: 100; }
     #rule-content { text-align: center; padding: 25px; background: #fff; border-radius: 12px; width: 85%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
     
-    /* リザルト画面の文字色を変更 */
     #msg-text { font-size: 1rem; font-weight: bold; margin-bottom: 10px; color: #497297; line-height: 1.4; display: block; }
     
     /* ボタン基本スタイル */
     #start-btn, #rule-btn, #close-rule-btn, #share-btn { padding: 6px 16px; margin: 4px; font-size: 0.85rem; font-weight: bold; border-radius: 8px; border: 1px solid #ccc; cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.2s; color: #497297; }
     
-    /* ボタン個別色指定 */
-    #start-btn { background: #BED5E7; }
+    /* ボタン個別色指定 (#E3F3FFに変更) */
+    #start-btn { background: #E3F3FF; }
     #rule-btn { background: #fff; }
     #share-btn { background: #fff; border: 1px solid #ccc; display: none; }
     #close-rule-btn { background: #fff; }
@@ -330,7 +329,7 @@ function endGame(gameOverImg, typeName) {
   msgText.style.display = 'block';
   msgText.innerHTML = (typeName === '休日' ? `休日が足りない…` : `${typeName}には勝てなかった…`) + `<br>SCORE: ${state.score}`;
   startBtn.innerText = 'タイトルに戻る';
-  startBtn.style.background = '#BED5E7'; /* リザルト時はタイトルに戻る色 */
+  startBtn.style.background = '#E3F3FF'; /* 背景色更新 */
   ruleBtn.style.display = 'none';
   shareBtn.style.display = 'inline-block';
   msgLayer.style.display = 'flex';
@@ -344,7 +343,7 @@ function backToTitle() {
   titleLogo.style.display = 'block';
   msgText.style.display = 'none';
   startBtn.innerText = '開始';
-  startBtn.style.background = '#BED5E7'; /* タイトル時は開始ボタン色 */
+  startBtn.style.background = '#E3F3FF'; /* 背景色更新 */
   ruleBtn.style.display = 'inline-block';
   shareBtn.style.display = 'none';
   setMochikumaImage(IMAGES.NORMAL);
