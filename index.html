@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta property="og:title" content="もちくまの休日ハント">
-  <meta property="og:description" content="迫りくる現実をよけて, 休日を勝ち取ろう！">
+  <meta property="og:description" content="迫りくる現実をよけて、休日を勝ち取ろう！">
   <meta property="og:image" content="https://mochikumas-holiday-hunt.vercel.app/ogpimage.png">
   <meta property="og:url" content="https://mochikumas-holiday-hunt.vercel.app/">
   <meta name="twitter:card" content="summary_large_image">
@@ -38,18 +38,16 @@
     
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
 
-    /* もちくま本体：中身の画像を重ねるためのコンテナ */
     #mochikuma { 
       width: 120px; height: 132px; position: absolute; bottom: 40px; left: 50%; 
       transform: translate3d(-50%, 0, 0); 
       transition: transform 0.1s ease-out; z-index: 5; 
       will-change: transform;
     }
-    /* 重ねる画像たちの共通設定 */
     .mk-img {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background-size: contain; background-repeat: no-repeat; background-position: center bottom;
-      opacity: 0; transition: opacity 0s; /* 切り替えは瞬時に */
+      opacity: 0; transition: opacity 0s;
     }
     .mk-img.show { opacity: 1; }
     #mochikuma.dodging { transform: translate3d(50%, 0, 0); }
@@ -91,9 +89,13 @@
     #rule-btn { background: #fff; }
     #share-btn { background: #fff; border: 1px solid #ccc; display: none; }
 
-    #ui-area { height: 140px; display: flex; align-items: center; justify-content: center; background: #f5faff; border-top: 1px solid #dee7ef; z-index: 10; padding-bottom: env(safe-area-inset-bottom); }
+    #ui-area { height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f5faff; border-top: 1px solid #dee7ef; z-index: 10; padding-bottom: env(safe-area-inset-bottom); }
     #dodge-btn { display: none; width: 70%; height: 80px; font-size: 1.8rem; font-weight: bold; background: #0056b3; border: none; border-radius: 40px; color: #ffffff; outline: none; box-shadow: 0 4px 0 #003d7a; }
     #dodge-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #003d7a; }
+
+    /* クレジット表示エリア */
+    #credit-area { text-align: center; color: #8ea4b8; font-size: 0.75rem; line-height: 1.6; pointer-events: none; }
+    .credit-main { font-weight: bold; color: #497297; margin-bottom: 2px; }
     
     #loading-text { font-weight: bold; color: #aaa; padding: 30px; letter-spacing: 0.05em; }
     #preloader { position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
@@ -144,6 +146,11 @@
   </div>
   <div id="ui-area">
     <button id="dodge-btn">よける</button>
+    <div id="credit-area">
+      <p class="credit-main">Game Start で BGM が流れます</p>
+      <p>スピーカーアイコンで ON / OFF の切り替えが可能です</p>
+      <p style="margin-top: 4px; opacity: 0.8;">BGM: くれっぷ (DOVA-SYNDROME)</p>
+    </div>
   </div>
 </div>
 
@@ -165,6 +172,7 @@ const loadingText = document.getElementById('loading-text');
 const menuArea = document.getElementById('menu-area');
 const preloader = document.getElementById('preloader');
 const muteBtn = document.getElementById('mute-btn');
+const creditArea = document.getElementById('credit-area');
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
@@ -228,7 +236,6 @@ const NEGATIVE_TYPES = [
 let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: true, isMuted: false, isSmiling: false, mode: 'title' };
 let spawnTimer = null;
 
-// 画像切り替えを opacity の操作に変更（srcの書き換えが発生しないためチラつかない）
 function setMochikumaImage(targetId) { 
   document.querySelectorAll('.mk-img').forEach(img => img.classList.remove('show'));
   const target = document.getElementById(targetId);
@@ -317,6 +324,7 @@ function startSequence() {
   state.canStart = false; state.score = 0; state.life = 3; state.isSmiling = false; state.mode = 'game';
   scoreDisp.innerText = `SCORE: ${state.score}`; updateLife();
   msgLayer.style.display = 'none'; shareBtn.style.display = 'none';
+  creditArea.style.display = 'none'; // クレジットを隠す
   dodgeBtn.style.display = 'block';
   setMochikumaImage('mk-normal');
   countdownDisp.style.display = 'block'; countdownDisp.innerText = 'Ready';
@@ -334,7 +342,6 @@ function initGame() {
   spawn();
 }
 
-// LIFE：初回のみ生成、以降は src を書き換えない（別の要素を表示/非表示にする）
 function updateLife() {
   if (heartWrap.children.length === 0) {
     for (let i = 0; i < 3; i++) {
@@ -342,20 +349,17 @@ function updateLife() {
       container.style.position = 'relative';
       container.style.width = '22px';
       container.style.height = '22px';
-      
       const hA = new Image(); hA.src = IMAGES.HEART_A; hA.className = 'heart-icon';
       hA.style.position = 'absolute';
       const hB = new Image(); hB.src = IMAGES.HEART_B; hB.className = 'heart-icon';
       hB.style.position = 'absolute';
-      
-      container.appendChild(hB); // 背景にB
-      container.appendChild(hA); // 前面にA
+      container.appendChild(hB);
+      container.appendChild(hA);
       heartWrap.appendChild(container);
     }
   }
   const containers = heartWrap.children;
   for (let i = 0; i < 3; i++) {
-    // A（赤いハート）の不透明度で残量を表現。srcを書き換えないのでチラつかない
     containers[i].lastChild.style.opacity = i < state.life ? 1 : 0;
   }
 }
@@ -379,6 +383,7 @@ function backToTitle() {
   state.mode = 'title'; state.score = 0; state.life = 3;
   scoreDisp.innerText = `SCORE: 0`; updateLife();
   dodgeBtn.style.display = 'none';
+  creditArea.style.display = 'block'; // クレジットを再表示
   titleLogo.style.display = 'block';
   msgText.style.display = 'none';
   startBtn.innerText = '開始';
@@ -397,8 +402,6 @@ muteBtn.addEventListener('click', () => {
 function initUIAfterLoad() {
   loadingText.style.display = 'none'; 
   menuArea.style.display = 'block';
-  
-  // もちくまの画像を各IDの背景にセット
   document.getElementById('mk-normal').style.backgroundImage = `url('${IMAGES.NORMAL}')`;
   document.getElementById('mk-dodge').style.backgroundImage = `url('${IMAGES.DODGE}')`;
   document.getElementById('mk-get').style.backgroundImage = `url('${IMAGES.GET}')`;
@@ -406,7 +409,6 @@ function initUIAfterLoad() {
   document.getElementById('mk-go-kazi').style.backgroundImage = `url('${IMAGES.GO_KAZI}')`;
   document.getElementById('mk-go-gakkou').style.backgroundImage = `url('${IMAGES.GO_GAKKOU}')`;
   document.getElementById('mk-go-yasumi').style.backgroundImage = `url('${IMAGES.HIT_REST}')`;
-
   setMochikumaImage('mk-normal');
   muteBtn.style.backgroundImage = `url('${state.isMuted ? IMAGES.VOL_OFF : IMAGES.VOL_ON}')`;
   updateLife();
