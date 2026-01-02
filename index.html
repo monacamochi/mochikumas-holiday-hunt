@@ -10,19 +10,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>もちくまの休日ハント</title>
   <style>
+    /* 基本レイアウト */
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { background: #f0f0f0; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; }
     #game-wrap { width: 100vw; max-width: 450px; height: 100vh; height: 100dvh; position: relative; background: #eef6ff; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
     
+    /* ステータスバー */
     #status { height: 60px; display: flex; align-items: center; padding: 0 15px; font-weight: bold; color: #666; background: #f5faff; border-bottom: 1px solid #dee7ef; z-index: 50; }
     #score { font-size: 0.9rem; white-space: nowrap; color: #497297; }
     .spacer { flex-grow: 1; }
     .status-right { display: flex; align-items: center; gap: 12px; }
     #life { display: flex; align-items: center; gap: 4px; color: #ff6b6b; font-size: 0.9rem; white-space: nowrap; }
     .heart-container { display: flex; gap: 2px; align-items: center; }
-    .heart-icon { width: 22px; height: 22px; object-fit: contain; }
+    .heart-icon { width: 22px; height: 22px; object-fit: contain; display: block; }
     
-    #mute-btn { width: 30px; height: 30px; background-color: transparent; background-size: contain; background-repeat: no-repeat; background-position: center; border: none; cursor: pointer; outline: none; }
+    #mute-btn { 
+      width: 30px; height: 30px; 
+      background-color: transparent; 
+      background-size: contain; 
+      background-repeat: no-repeat; 
+      background-position: center; 
+      border: none; 
+      cursor: pointer; 
+      outline: none; 
+      display: block; 
+      pointer-events: auto;
+      -webkit-appearance: none;
+    }
     
     #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
 
@@ -32,39 +46,44 @@
       background-size: contain; background-repeat: no-repeat; background-position: center bottom; 
       transition: transform 0.1s ease-out; z-index: 5; 
       will-change: transform;
+      -webkit-backface-visibility: hidden; backface-visibility: hidden;
     }
-    /* 予約読み込み */
-    #mochikuma::before, #mochikuma::after { content: ""; position: absolute; width: 0; height: 0; visibility: hidden; }
-    #mochikuma.pre-load-dodge::before { background-image: url('./yoke.png'); }
-    #mochikuma.pre-load-get::after { background-image: url('./default-get.png'); }
-
     #mochikuma.dodging { transform: translate3d(50%, 0, 0); }
 
-    /* タイトルロゴのアニメーション */
+    #countdown { 
+      position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); 
+      font-size: 4rem; font-weight: bold; color: #555; z-index: 15; white-space: nowrap; 
+    }
+
+    .obj { 
+      position: absolute; left: 50%; top: 0; width: 80px; height: 80px; 
+      background-size: contain; background-repeat: no-repeat; background-position: center; 
+      z-index: 4; transform: translate3d(-50%, -100px, 0); 
+      will-change: transform; 
+      -webkit-backface-visibility: hidden; backface-visibility: hidden;
+    }
+
     @keyframes poyon {
       0% { transform: scale(0); opacity: 0; }
       70% { transform: scale(1.1); opacity: 1; }
       100% { transform: scale(1); opacity: 1; }
     }
 
-    .obj { position: absolute; left: 50%; top: 0; width: 80px; height: 80px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 4; transform: translate3d(-50%, -100px, 0); will-change: transform; }
-
     #msg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 90px; z-index: 20; pointer-events: none; }
-    #msg-content { pointer-events: auto; text-align: center; padding: 35px 20px; background-image: url('./kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-    
-    #title-logo { 
-      max-width: 280px; height: auto; margin-bottom: 12px; display: block; 
-      animation: poyon 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; 
-      transform-origin: center; 
-    }
+    #msg-content { pointer-events: auto; text-align: center; padding: 35px 20px; background-image: url('./kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; background-color: transparent; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    #title-logo { max-width: 280px; height: auto; margin-bottom: 12px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); animation: poyon 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-origin: center; }
     
     #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; }
     #rule-content { position: relative; width: 90%; max-width: 344px; line-height: 0; }
     #rule-img { width: 100%; height: auto; border-radius: 12px; }
-    #close-rule-btn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 8px 24px; font-size: 0.9rem; font-weight: bold; border-radius: 8px; border: 1px solid #ccc; background: #fff; color: #497297; }
+    #close-rule-btn { 
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      padding: 8px 24px; font-size: 0.9rem; font-weight: bold; border-radius: 8px; 
+      border: 1px solid #ccc; background: #fff; cursor: pointer; color: #497297;
+    }
 
     #msg-text { font-size: 1rem; font-weight: bold; margin-bottom: 10px; color: #497297; line-height: 1.4; display: block; }
-    #start-btn, #rule-btn, #share-btn { padding: 6px 16px; margin: 4px; font-size: 0.85rem; font-weight: bold; border-radius: 8px; border: 1px solid #ccc; cursor: pointer; color: #497297; }
+    #start-btn, #rule-btn, #share-btn { padding: 6px 16px; margin: 4px; font-size: 0.85rem; font-weight: bold; border-radius: 8px; border: 1px solid #ccc; cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.2s; color: #497297; }
     #start-btn { background: #E3F3FF; }
     #rule-btn { background: #fff; }
     #share-btn { background: #fff; border: 1px solid #ccc; display: none; }
@@ -73,19 +92,13 @@
     #dodge-btn { display: none; width: 70%; height: 80px; font-size: 1.8rem; font-weight: bold; background: #0056b3; border: none; border-radius: 40px; color: #ffffff; outline: none; box-shadow: 0 4px 0 #003d7a; }
     #dodge-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #003d7a; }
     
-    #loading-text { font-weight: bold; color: #aaa; padding: 30px; }
-    #image-keep-alive { position: fixed; top: -9999px; left: -9999px; visibility: hidden; }
+    #loading-text { font-weight: bold; color: #aaa; padding: 30px; letter-spacing: 0.05em; }
+    #preloader { position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
+    #preloader img { width: 1px; height: 1px; }
   </style>
 </head>
 <body>
-<div id="image-keep-alive">
-  <img src="./default.png"><img src="./yoke.png"><img src="./yasumi.png"><img src="./kumo.png">
-  <img src="./sigoto.png"><img src="./kazi.png"><img src="./gakkou.png"><img src="./kyuzitu.png">
-  <img src="./default-get.png"><img src="./title.png"><img src="./rule.png">
-  <img src="./heart-A.png"><img src="./heart-B.png"><img src="./volume-ON.png"><img src="./volume-OFF.png">
-  <img src="./gameover-shigoto.png"><img src="./gameover-kazi.png"><img src="./gameover-gakkou.png">
-</div>
-
+<div id="preloader"></div>
 <div id="game-wrap">
   <div id="status">
     <div id="score">SCORE: 0</div>
@@ -96,8 +109,8 @@
     </div>
   </div>
   <div id="game-field">
-    <div id="mochikuma" class="pre-load-dodge pre-load-get"></div>
-    <div id="countdown" style="display: none; position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #555; z-index: 15;"></div>
+    <div id="mochikuma"></div>
+    <div id="countdown" style="display: none;"></div>
   </div>
   <div id="msg-layer">
     <div id="msg-content">
@@ -140,19 +153,23 @@ const shareBtn = document.getElementById('share-btn');
 const closeRuleBtn = document.getElementById('close-rule-btn');
 const loadingText = document.getElementById('loading-text');
 const menuArea = document.getElementById('menu-area');
+const preloader = document.getElementById('preloader');
 const muteBtn = document.getElementById('mute-btn');
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-// レイテンシ短縮のための設定
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
 let bgmBuffer = null, getSoundBuffer = null, bgmSource = null, bgmGain = null;
 
 async function loadAudio(url) {
   try {
     const response = await fetch(url);
+    if (!response.ok) throw new Error('Audio load failed');
     const arrayBuffer = await response.arrayBuffer();
     return await audioCtx.decodeAudioData(arrayBuffer);
-  } catch (e) { return null; }
+  } catch (e) {
+    console.warn(e);
+    return null;
+  }
 }
 
 function playBGM() {
@@ -180,7 +197,6 @@ function playGetSound() {
   gainNode.gain.value = isMobile ? 0.5 : 0.15; 
   source.connect(gainNode);
   gainNode.connect(audioCtx.destination);
-  // 発音までの時間を最短にする
   source.start(audioCtx.currentTime);
 }
 
@@ -266,10 +282,7 @@ function spawn() {
       if(!state.dodging) {
         hasChecked = true;
         if(isNegative) { endGame(currentObj.goImg, currentObj.name); clearInterval(loop); } 
-        else { 
-          state.score += 10; scoreDisp.innerText = `SCORE: ${state.score}`; 
-          playGetSound(); showSmileEffect(); obj.remove(); clearInterval(loop); 
-        }
+        else { state.score += 10; scoreDisp.innerText = `SCORE: ${state.score}`; playGetSound(); showSmileEffect(); obj.remove(); clearInterval(loop); }
       }
     }
     
@@ -336,11 +349,6 @@ function backToTitle() {
   scoreDisp.innerText = `SCORE: 0`; updateLife();
   dodgeBtn.style.display = 'none';
   titleLogo.style.display = 'block';
-  // アニメーションを再起動するために一瞬消して再描画
-  titleLogo.style.animation = 'none';
-  titleLogo.offsetHeight; 
-  titleLogo.style.animation = null;
-  
   msgText.style.display = 'none';
   startBtn.innerText = '開始';
   ruleBtn.style.display = 'inline-block';
@@ -352,7 +360,22 @@ muteBtn.addEventListener('click', () => {
   state.isMuted = !state.isMuted;
   if (bgmGain) bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
   muteBtn.style.backgroundImage = `url('${state.isMuted ? IMAGES.VOL_OFF : IMAGES.VOL_ON}')`;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
 });
+
+function preloadAllImages(imageObj, callback) {
+  const urls = Object.values(imageObj); let loadedCount = 0;
+  preloader.innerHTML = '';
+  urls.forEach(url => {
+    const img = new Image();
+    img.onload = img.onerror = () => { 
+      loadedCount++; 
+      preloader.appendChild(img);
+      if (callback && loadedCount === urls.length) callback(); 
+    };
+    img.src = url;
+  });
+}
 
 function initUIAfterLoad() {
   loadingText.style.display = 'none'; 
@@ -362,11 +385,15 @@ function initUIAfterLoad() {
   updateLife();
 }
 
+const loadTimeout = setTimeout(initUIAfterLoad, 1000);
+
 Promise.all([
+  new Promise(res => preloadAllImages(IMAGES, res)),
   loadAudio('./bgm.mp3').then(b => bgmBuffer = b),
   loadAudio('./get.mp3').then(b => getSoundBuffer = b)
-]).finally(() => {
-  setTimeout(initUIAfterLoad, 500);
+]).then(() => {
+  clearTimeout(loadTimeout);
+  initUIAfterLoad();
 });
 
 ruleBtn.addEventListener('click', () => ruleLayer.style.display = 'flex');
@@ -376,6 +403,8 @@ startBtn.addEventListener('click', () => {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   if(state.mode === 'title') { startSequence(); } else if(state.mode === 'result') { backToTitle(); }
 });
+
+// シェア文言の修正箇所
 shareBtn.addEventListener('click', () => {
   const shareText = `「もちくまの休日ハント」で遊んだよ！\nスコアは【${state.score}】でした！\n\n#もちくまの休日ハント`;
   const shareUrl = `https://mochikumas-holiday-hunt.vercel.app/`;
