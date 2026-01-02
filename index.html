@@ -10,434 +10,223 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>もちくまの休日ハント</title>
   <style>
-    /* 基本レイアウト：ご提示のコードを維持 */
+    /* 以前の安定したスタイルを維持 */
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { background: #f0f0f0; overflow: hidden; font-family: sans-serif; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; }
-    #game-wrap { width: 100vw; max-width: 450px; height: 100vh; height: 100dvh; position: relative; background: #eef6ff; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+    #game-wrap { width: 100vw; max-width: 450px; height: 100vh; height: 100dvh; position: relative; background: #eef6ff; display: flex; flex-direction: column; }
     
-    #status { height: 60px; display: flex; align-items: center; padding: 0 15px; font-weight: bold; color: #666; background: #f5faff; border-bottom: 1px solid #dee7ef; z-index: 50; }
-    #score { font-size: 0.9rem; white-space: nowrap; color: #497297; }
+    #status { height: 60px; display: flex; align-items: center; padding: 0 15px; background: #f5faff; border-bottom: 1px solid #dee7ef; z-index: 50; }
+    #score { font-size: 0.9rem; color: #497297; font-weight: bold; }
     .spacer { flex-grow: 1; }
-    .status-right { display: flex; align-items: center; gap: 12px; }
-    #life { display: flex; align-items: center; gap: 4px; color: #ff6b6b; font-size: 0.9rem; white-space: nowrap; }
-    .heart-container { display: flex; gap: 2px; align-items: center; }
-    .heart-icon { width: 22px; height: 22px; object-fit: contain; display: block; }
+    #life { display: flex; align-items: center; gap: 4px; color: #ff6b6b; font-size: 0.9rem; margin-right: 10px; }
+    .heart-icon { width: 22px; height: 22px; object-fit: contain; }
     
-    #mute-btn { 
-      width: 30px; height: 30px; 
-      background-color: transparent; 
-      background-size: contain; 
-      background-repeat: no-repeat; 
-      background-position: center; 
-      border: none; 
-      cursor: pointer; 
-      outline: none; 
-      display: block; 
-      pointer-events: auto;
-      -webkit-appearance: none;
-    }
-    
-    #game-field { flex: 1; position: relative; overflow: hidden; width: 100%; }
+    #game-field { flex: 1; position: relative; overflow: hidden; }
 
+    /* もちくま：挙動がスムーズだった頃の設定 */
     #mochikuma { 
       width: 120px; height: 132px; position: absolute; bottom: 40px; left: 50%; 
       transform: translate3d(-50%, 0, 0); 
       background-size: contain; background-repeat: no-repeat; background-position: center bottom; 
       transition: transform 0.1s ease-out; z-index: 5; 
       will-change: transform;
-      -webkit-backface-visibility: hidden; backface-visibility: hidden;
     }
     #mochikuma.dodging { transform: translate3d(50%, 0, 0); }
 
-    /* 点滅防止：画面外に透明な状態で配置し続けるための設定 */
-    #ghost-images {
-      position: absolute;
-      top: -9999px;
-      left: -9999px;
-      width: 0;
-      height: 0;
-      overflow: hidden;
-      opacity: 0.01; /* 0だとブラウザが描画をサボるため、極小の値を設定 */
-      pointer-events: none;
-    }
-    .ghost-layer { width: 1px; height: 1px; }
+    /* 点滅防止：画面外で読み込ませておく */
+    #preload-area { position: absolute; top: -999px; left: -999px; opacity: 0.01; pointer-events: none; }
 
-    #countdown { 
-      position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); 
-      font-size: 4rem; font-weight: bold; color: #555; z-index: 15; white-space: nowrap; 
-    }
+    #countdown { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #555; z-index: 15; }
 
-    .obj { 
-      position: absolute; left: 50%; top: 0; width: 80px; height: 80px; 
-      background-size: contain; background-repeat: no-repeat; background-position: center; 
-      z-index: 4; transform: translate3d(-50%, -100px, 0); 
-      will-change: transform; 
-      -webkit-backface-visibility: hidden; backface-visibility: hidden;
-    }
-
-    @keyframes poyon {
-      0% { transform: scale(0); opacity: 0; }
-      70% { transform: scale(1.1); opacity: 1; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    #msg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; display: flex; justify-content: center; align-items: flex-start; padding-top: 90px; z-index: 20; pointer-events: none; }
-    #msg-content { pointer-events: auto; text-align: center; padding: 35px 20px; background-image: url('./kumo.png'); background-size: 100% 100%; background-repeat: no-repeat; background-position: center; background-color: transparent; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-    #title-logo { max-width: 280px; height: auto; margin-bottom: 12px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); animation: poyon 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; transform-origin: center; }
+    #msg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; padding-top: 90px; z-index: 20; }
+    #msg-content { text-align: center; background-image: url('./kumo.png'); background-size: 100% 100%; width: 320px; height: 227px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    #title-logo { max-width: 280px; }
     
-    #rule-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 100; }
-    #rule-content { position: relative; width: 90%; max-width: 344px; line-height: 0; }
-    #rule-img { width: 100%; height: auto; border-radius: 12px; }
-    #close-rule-btn { 
-      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-      padding: 8px 24px; font-size: 0.9rem; font-weight: bold; border-radius: 8px; 
-      border: 1px solid #ccc; background: #fff; cursor: pointer; color: #497297;
-    }
-
-    #msg-text { font-size: 1rem; font-weight: bold; margin-bottom: 10px; color: #497297; line-height: 1.4; display: block; }
-    #start-btn, #rule-btn, #share-btn { padding: 6px 16px; margin: 4px; font-size: 0.85rem; font-weight: bold; border-radius: 8px; border: 1px solid #ccc; cursor: pointer; letter-spacing: 0.02em; transition: opacity 0.2s; color: #497297; }
-    #start-btn { background: #E3F3FF; }
-    #rule-btn { background: #fff; }
-    #share-btn { background: #fff; border: 1px solid #ccc; display: none; }
-
     #ui-area { height: 140px; display: flex; align-items: center; justify-content: center; background: #f5faff; border-top: 1px solid #dee7ef; z-index: 10; padding-bottom: env(safe-area-inset-bottom); }
-    #dodge-btn { display: none; width: 70%; height: 80px; font-size: 1.8rem; font-weight: bold; background: #0056b3; border: none; border-radius: 40px; color: #ffffff; outline: none; box-shadow: 0 4px 0 #003d7a; }
-    #dodge-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #003d7a; }
+    #dodge-btn { display: none; width: 70%; height: 80px; font-size: 1.8rem; font-weight: bold; background: #0056b3; border: none; border-radius: 40px; color: #fff; box-shadow: 0 4px 0 #003d7a; }
     
-    #loading-text { font-weight: bold; color: #aaa; padding: 30px; letter-spacing: 0.05em; }
-    #preloader { position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
+    #start-btn, #share-btn { padding: 8px 16px; margin: 4px; border-radius: 8px; border: 1px solid #ccc; font-weight: bold; color: #497297; cursor: pointer; }
+    #start-btn { background: #E3F3FF; }
+    #share-btn { background: #fff; display: none; }
   </style>
 </head>
 <body>
-<div id="ghost-images"></div>
-<div id="preloader"></div>
+
+<div id="preload-area">
+  <img src="./default.png">
+  <img src="./yoke.png">
+  <img src="./default-get.png">
+  <img src="./gameover-shigoto.png">
+  <img src="./gameover-kazi.png">
+  <img src="./gameover-gakkou.png">
+  <img src="./yasumi.png">
+  <img src="./heart-A.png">
+  <img src="./heart-B.png">
+</div>
 
 <div id="game-wrap">
   <div id="status">
     <div id="score">SCORE: 0</div>
     <div class="spacer"></div>
-    <div class="status-right">
-      <div id="life">LIFE：<span id="heart-wrap" class="heart-container"></span></div>
-      <button id="mute-btn" type="button"></button>
-    </div>
+    <div id="life">LIFE：<span id="heart-wrap"></span></div>
   </div>
+
   <div id="game-field">
-    <div id="mochikuma"></div>
-    <div id="countdown" style="display: none;"></div>
+    <div id="mochikuma" style="background-image: url('./default.png');"></div>
+    <div id="countdown" style="display:none;"></div>
   </div>
+
   <div id="msg-layer">
     <div id="msg-content">
-      <div id="loading-text">Now loading...</div>
-      <div id="menu-area" style="display: none;">
-        <img src="./title.png" id="title-logo" alt="もちくまの休日ハント">
-        <p id="msg-text" style="display: none;"></p>
-        <div id="menu-btns">
-          <button id="start-btn">開始</button>
-          <button id="share-btn">結果をシェア</button>
-          <button id="rule-btn">ルール</button>
-        </div>
+      <img src="./title.png" id="title-logo">
+      <p id="msg-text" style="display:none; font-weight:bold; color:#497297; margin:10px 0; line-height:1.4;"></p>
+      <div id="btn-area">
+        <button id="start-btn">開始</button>
+        <button id="share-btn">結果をシェア</button>
       </div>
     </div>
   </div>
-  <div id="rule-layer" style="display: none;">
-    <div id="rule-content">
-      <img src="./rule.png" id="rule-img" alt="ルール説明">
-      <button id="close-rule-btn">閉じる</button>
-    </div>
-  </div>
+
   <div id="ui-area">
     <button id="dodge-btn">よける</button>
   </div>
 </div>
 
 <script>
-// --- JS：既存ロジック・Ready Go演出を一切変えずに追加 ---
-
 const mk = document.getElementById('mochikuma');
-const ghostContainer = document.getElementById('ghost-images');
-// (他要素取得は省略：ご提示の通り)
-const dodgeBtn = document.getElementById('dodge-btn');
-const msgLayer = document.getElementById('msg-layer');
-const ruleLayer = document.getElementById('rule-layer');
-const countdownDisp = document.getElementById('countdown');
-const msgText = document.getElementById('msg-text');
-const titleLogo = document.getElementById('title-logo');
-const scoreDisp = document.getElementById('score');
-const heartWrap = document.getElementById('heart-wrap');
-const startBtn = document.getElementById('start-btn');
-const ruleBtn = document.getElementById('rule-btn');
-const shareBtn = document.getElementById('share-btn');
-const closeRuleBtn = document.getElementById('close-rule-btn');
-const loadingText = document.getElementById('loading-text');
-const menuArea = document.getElementById('menu-area');
-const preloader = document.getElementById('preloader');
-const muteBtn = document.getElementById('mute-btn');
+const state = { score: 0, life: 3, active: false, dodging: false, isSmiling: false };
 
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
-let bgmBuffer = null, getSoundBuffer = null, bgmSource = null, bgmGain = null;
-
-// 画像リスト
-const IMAGES = {
-  NORMAL: './default.png', DODGE: './yoke.png', HIT_REST: './yasumi.png', KUMO: './kumo.png',
-  SIGOTO: './sigoto.png', KAZI: './kazi.png', GAKKOU: './gakkou.png', KYUZITU: './kyuzitu.png',
-  GET: './default-get.png', TITLE: './title.png', RULE_IMG: './rule.png',
-  HEART_A: './heart-A.png', HEART_B: './heart-B.png',
-  VOL_ON: './volume-ON.png', VOL_OFF: './volume-OFF.png',
-  GO_SIGOTO: './gameover-shigoto.png', GO_KAZI: './gameover-kazi.png', GO_GAKKOU: './gameover-gakkou.png'
-};
-
-// 【追加】もちくまの全ての状態を画面外で常時レンダリングさせる関数
-function setupGhostImages() {
-  const ghostList = [IMAGES.NORMAL, IMAGES.DODGE, IMAGES.GET, IMAGES.HIT_REST, IMAGES.GO_SIGOTO, IMAGES.GO_KAZI, IMAGES.GO_GAKKOU];
-  ghostList.forEach(url => {
-    const div = document.createElement('div');
-    div.className = 'ghost-layer';
-    div.style.backgroundImage = `url('${url}')`;
-    ghostContainer.appendChild(div);
-  });
-}
-
-// (音声ロード、BGM、SE関数は省略：ご提示の通り)
-async function loadAudio(url) {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Audio load failed');
-    const arrayBuffer = await response.arrayBuffer();
-    return await audioCtx.decodeAudioData(arrayBuffer);
-  } catch (e) {
-    console.warn(e);
-    return null;
-  }
-}
-function playBGM() {
-  if (!bgmBuffer) return;
-  if (bgmSource) { try { bgmSource.stop(); } catch(e) {} }
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  bgmSource = audioCtx.createBufferSource();
-  bgmSource.buffer = bgmBuffer;
-  bgmSource.loop = true;
-  bgmGain = audioCtx.createGain();
-  bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
-  bgmSource.connect(bgmGain);
-  bgmGain.connect(audioCtx.destination);
-  bgmSource.start(0);
-}
-function stopBGM() { if (bgmSource) { try { bgmSource.stop(); } catch(e) {} bgmSource = null; } }
-function playGetSound() {
-  if (!getSoundBuffer || state.isMuted) return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  const source = audioCtx.createBufferSource();
-  const gainNode = audioCtx.createGain();
-  source.buffer = getSoundBuffer;
-  gainNode.gain.value = isMobile ? 0.5 : 0.15; 
-  source.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
-  source.start(audioCtx.currentTime);
-}
-
-const NEGATIVE_TYPES = [
-  { img: IMAGES.SIGOTO, goImg: IMAGES.GO_SIGOTO, name: "仕事" },
-  { img: IMAGES.KAZI, goImg: IMAGES.GO_KAZI, name: "家事" },
-  { img: IMAGES.GAKKOU, goImg: IMAGES.GO_GAKKOU, name: "学校" }
-];
-
-let state = { score: 0, life: 3, active: false, dodging: false, speed: 6, canStart: true, isMuted: false, isSmiling: false, mode: 'title' };
-let spawnTimer = null;
-
-function setMochikumaImage(url) { mk.style.backgroundImage = `url('${url}')`; }
-
-function showSmileEffect() {
-  state.isSmiling = true;
-  setMochikumaImage(IMAGES.GET);
-  setTimeout(() => {
-    state.isSmiling = false;
-    if(state.active) { setMochikumaImage(state.dodging ? IMAGES.DODGE : IMAGES.NORMAL); }
-  }, 300);
-}
-
-const startDodge = (e) => { 
-  if (e.cancelable) e.preventDefault();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  if(!state.active) return; 
-  state.dodging = true; 
-  mk.classList.add('dodging'); 
-  if(!state.isSmiling) setMochikumaImage(IMAGES.DODGE);
-};
-const endDodge = (e) => { 
-  if (e.cancelable) e.preventDefault();
-  state.dodging = false; 
-  mk.classList.remove('dodging'); 
-  if(state.active && !state.isSmiling) setMochikumaImage(IMAGES.NORMAL);
-};
-
-dodgeBtn.addEventListener('touchstart', startDodge, {passive: false});
-dodgeBtn.addEventListener('touchend', endDodge, {passive: false});
-dodgeBtn.addEventListener('mousedown', startDodge);
-window.addEventListener('mouseup', endDodge);
+function setImg(url) { mk.style.backgroundImage = `url('${url}')`; }
 
 function spawn() {
-  if(!state.active) return;
+  if (!state.active) return;
   const obj = document.createElement('div');
   obj.className = 'obj';
-  const isNegative = Math.random() > 0.5;
-  let currentObj = null;
-  if(isNegative) {
-    currentObj = NEGATIVE_TYPES[Math.floor(Math.random() * NEGATIVE_TYPES.length)];
-    obj.style.backgroundImage = `url('${currentObj.img}')`;
-  } else {
-    obj.style.backgroundImage = `url('${IMAGES.KYUZITU}')`;
-  }
+  obj.style.position = 'absolute';
+  obj.style.left = '50%';
+  obj.style.top = '0';
+  obj.style.width = '80px';
+  obj.style.height = '80px';
+  obj.style.backgroundSize = 'contain';
+  obj.style.backgroundRepeat = 'no-repeat';
+  obj.style.backgroundPosition = 'center';
+  obj.style.zIndex = '4';
+
+  const isNeg = Math.random() > 0.5;
+  const types = [
+    {img:'./sigoto.png', go:'./gameover-shigoto.png', n:'仕事'},
+    {img:'./kazi.png', go:'./gameover-kazi.png', n:'家事'},
+    {img:'./gakkou.png', go:'./gameover-gakkou.png', n:'学校'}
+  ];
+  const t = isNeg ? types[Math.floor(Math.random()*3)] : {img:'./kyuzitu.png'};
+  obj.style.backgroundImage = `url('${t.img}')`;
   document.getElementById('game-field').appendChild(obj);
 
   let posY = -100;
-  let hasChecked = false;
-  const currentSpeed = Math.min(state.speed + (state.score / 50), 18);
-
   const loop = setInterval(() => {
-    if(!state.active) { clearInterval(loop); obj.remove(); return; }
-    posY += currentSpeed;
+    if (!state.active) { clearInterval(loop); obj.remove(); return; }
+    posY += (6 + state.score/50);
     obj.style.transform = `translate3d(-50%, ${posY}px, 0)`;
-    
-    const objRect = obj.getBoundingClientRect();
-    const mkRect = mk.getBoundingClientRect();
-    const mkHitLeft = mkRect.left + (mkRect.width * 0.2);
-    const mkHitRight = mkRect.right - (mkRect.width * 0.2);
-    const mkHitTop = mkRect.top + (mkRect.height * 0.2);
-    
-    if(!hasChecked && (objRect.right > mkHitLeft && objRect.left < mkHitRight && objRect.bottom > mkHitTop && objRect.top < mkRect.bottom)) {
-      if(!state.dodging) {
-        hasChecked = true;
-        if(isNegative) { endGame(currentObj.goImg, currentObj.name); clearInterval(loop); } 
-        else { state.score += 10; scoreDisp.innerText = `SCORE: ${state.score}`; playGetSound(); showSmileEffect(); obj.remove(); clearInterval(loop); }
+
+    const oR = obj.getBoundingClientRect();
+    const mR = mk.getBoundingClientRect();
+
+    if (oR.bottom > mR.top + 20 && oR.top < mR.bottom - 20 && oR.right > mR.left + 25 && oR.left < mR.right - 25) {
+      if (!state.dodging) {
+        if (isNeg) {
+          state.active = false;
+          setImg(t.go);
+          showResult(`${t.n}には勝てなかった…`);
+          clearInterval(loop);
+        } else {
+          state.score += 10;
+          document.getElementById('score').innerText = `SCORE: ${state.score}`;
+          state.isSmiling = true;
+          setImg('./default-get.png');
+          setTimeout(() => { 
+            state.isSmiling = false; 
+            if(state.active) setImg(state.dodging ? './yoke.png' : './default.png'); 
+          }, 300);
+          obj.remove(); clearInterval(loop);
+        }
       }
     }
-    
-    if(!hasChecked && objRect.top > mkRect.bottom) {
-      hasChecked = true;
-      if(!isNegative) { 
-        state.life--; updateLife(); 
-        if(state.life <= 0) { endGame(IMAGES.HIT_REST, '休日'); clearInterval(loop); } 
+    if (posY > 800) {
+      if (!isNeg) {
+        state.life--; updateLife();
+        if(state.life <= 0) {
+          state.active = false;
+          setImg('./yasumi.png');
+          showResult('休日が足りない…');
+          clearInterval(loop);
+        }
       }
+      obj.remove(); clearInterval(loop);
     }
-    if(posY > document.getElementById('game-field').clientHeight + 150) { obj.remove(); clearInterval(loop); }
   }, 16);
-  spawnTimer = setTimeout(spawn, Math.max(1800 - (state.score * 12), 550));
-}
-
-// 既存の Ready Go 演出を維持
-function startSequence() {
-  state.canStart = false; state.score = 0; state.life = 3; state.isSmiling = false; state.mode = 'game';
-  scoreDisp.innerText = `SCORE: ${state.score}`; updateLife();
-  msgLayer.style.display = 'none'; shareBtn.style.display = 'none';
-  dodgeBtn.style.display = 'block';
-  setMochikumaImage(IMAGES.NORMAL);
-  countdownDisp.style.display = 'block'; countdownDisp.innerText = 'Ready';
-  setTimeout(() => {
-    countdownDisp.innerText = 'Go!'; playBGM();
-    setTimeout(() => { countdownDisp.style.display = 'none'; initGame(); }, 800);
-  }, 1000);
-}
-
-function initGame() {
-  if (spawnTimer) clearTimeout(spawnTimer);
-  document.querySelectorAll('.obj').forEach(o => o.remove());
-  state.active = true; state.dodging = false; state.speed = 6;
-  mk.classList.remove('dodging'); setMochikumaImage(IMAGES.NORMAL);
-  spawn();
+  setTimeout(spawn, Math.max(1800 - state.score*10, 600));
 }
 
 function updateLife() {
-  heartWrap.innerHTML = '';
-  for (let i = 0; i < 3; i++) {
+  const wrap = document.getElementById('heart-wrap');
+  wrap.innerHTML = '';
+  for(let i=0; i<3; i++) {
     const img = document.createElement('img');
     img.className = 'heart-icon';
-    img.src = i < state.life ? IMAGES.HEART_A : IMAGES.HEART_B;
-    heartWrap.appendChild(img);
+    img.src = i < state.life ? './heart-A.png' : './heart-B.png';
+    wrap.appendChild(img);
   }
 }
 
-function endGame(gameOverImg, typeName) {
-  state.active = false; stopBGM(); state.mode = 'result';
-  if (spawnTimer) clearTimeout(spawnTimer);
-  document.querySelectorAll('.obj').forEach(o => o.remove());
-  setMochikumaImage(gameOverImg);
-  titleLogo.style.display = 'none';
-  msgText.style.display = 'block';
-  msgText.innerHTML = (typeName === '休日' ? `休日が足りない…` : `${typeName}には勝てなかった…`) + `<br>SCORE: ${state.score}`;
-  startBtn.innerText = 'タイトルに戻る';
-  ruleBtn.style.display = 'none';
-  shareBtn.style.display = 'inline-block';
-  msgLayer.style.display = 'flex';
-  setTimeout(() => { state.canStart = true; }, 800);
+function showResult(txt) {
+  document.getElementById('title-logo').style.display = 'none';
+  document.getElementById('msg-text').style.display = 'block';
+  document.getElementById('msg-text').innerHTML = `${txt}<br>SCORE: ${state.score}`;
+  document.getElementById('start-btn').innerText = 'タイトルに戻る';
+  document.getElementById('share-btn').style.display = 'inline-block';
+  document.getElementById('msg-layer').style.display = 'flex';
 }
 
-function backToTitle() {
-  state.mode = 'title'; state.score = 0; state.life = 3;
-  scoreDisp.innerText = `SCORE: 0`; updateLife();
-  dodgeBtn.style.display = 'none';
-  titleLogo.style.display = 'block';
-  msgText.style.display = 'none';
-  startBtn.innerText = '開始';
-  ruleBtn.style.display = 'inline-block';
-  shareBtn.style.display = 'none';
-  setMochikumaImage(IMAGES.NORMAL);
+function startSequence() {
+  document.getElementById('msg-layer').style.display = 'none';
+  document.getElementById('dodge-btn').style.display = 'block';
+  const cd = document.getElementById('countdown');
+  cd.style.display = 'block'; cd.innerText = 'Ready';
+  setTimeout(() => {
+    cd.innerText = 'Go!';
+    setTimeout(() => { cd.style.display = 'none'; state.active = true; spawn(); }, 800);
+  }, 1000);
 }
 
-muteBtn.addEventListener('click', () => {
-  state.isMuted = !state.isMuted;
-  if (bgmGain) bgmGain.gain.value = state.isMuted ? 0 : (isMobile ? 0.4 : 0.2);
-  muteBtn.style.backgroundImage = `url('${state.isMuted ? IMAGES.VOL_OFF : IMAGES.VOL_ON}')`;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+document.getElementById('start-btn').addEventListener('click', () => {
+  if (document.getElementById('start-btn').innerText === '開始') {
+    startSequence();
+  } else {
+    location.reload();
+  }
 });
 
-function preloadAllImages(imageObj, callback) {
-  const urls = Object.values(imageObj); let loadedCount = 0;
-  preloader.innerHTML = '';
-  urls.forEach(url => {
-    const img = new Image();
-    img.onload = img.onerror = () => { 
-      loadedCount++; 
-      preloader.appendChild(img);
-      if (callback && loadedCount === urls.length) callback(); 
-    };
-    img.src = url;
-  });
-}
-
-function initUIAfterLoad() {
-  setupGhostImages(); // 【追加】画面外レンダリング開始
-  loadingText.style.display = 'none'; 
-  menuArea.style.display = 'block';
-  setMochikumaImage(IMAGES.NORMAL);
-  muteBtn.style.backgroundImage = `url('${state.isMuted ? IMAGES.VOL_OFF : IMAGES.VOL_ON}')`;
-  updateLife();
-}
-
-const loadTimeout = setTimeout(initUIAfterLoad, 1000);
-
-Promise.all([
-  new Promise(res => preloadAllImages(IMAGES, res)),
-  loadAudio('./bgm.mp3').then(b => bgmBuffer = b),
-  loadAudio('./get.mp3').then(b => getSoundBuffer = b)
-]).then(() => {
-  clearTimeout(loadTimeout);
-  initUIAfterLoad();
+document.getElementById('share-btn').addEventListener('click', () => {
+  const text = `「もちくまの休日ハント」で遊んだよ！\nスコアは【${state.score}】でした！\n\n#もちくまの休日ハント`;
+  const url = `https://mochikumas-holiday-hunt.vercel.app/`;
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
 });
 
-ruleBtn.addEventListener('click', () => ruleLayer.style.display = 'flex');
-closeRuleBtn.addEventListener('click', () => ruleLayer.style.display = 'none');
-startBtn.addEventListener('click', () => { 
-  if(!state.canStart) return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  if(state.mode === 'title') { startSequence(); } else if(state.mode === 'result') { backToTitle(); }
-});
+const startMove = (e) => {
+  if (e.cancelable) e.preventDefault();
+  if (!state.active) return;
+  state.dodging = true; mk.classList.add('dodging');
+  if (!state.isSmiling) setImg('./yoke.png');
+};
+const endMove = () => {
+  state.dodging = false; mk.classList.remove('dodging');
+  if (state.active && !state.isSmiling) setImg('./default.png');
+};
 
-shareBtn.addEventListener('click', () => {
-  const shareText = `「もちくまの休日ハント」で遊んだよ！\nスコアは【${state.score}】でした！\n\n#もちくまの休日ハント`;
-  const shareUrl = `https://mochikumas-holiday-hunt.vercel.app/`;
-  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
-});
+document.getElementById('dodge-btn').addEventListener('touchstart', startMove);
+document.getElementById('dodge-btn').addEventListener('touchend', endMove);
+
+updateLife();
 </script>
 </body>
 </html>
