@@ -93,12 +93,19 @@
     #dodge-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #003d7a; }
     
     #loading-text { font-weight: bold; color: #aaa; padding: 30px; letter-spacing: 0.05em; }
-    #preloader { position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
-    #preloader img { width: 1px; height: 1px; }
+    /* 強制メモリ保持用コンテナ */
+    #image-keep-alive { position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
   </style>
 </head>
 <body>
-<div id="preloader"></div>
+<div id="image-keep-alive">
+  <img src="./default.png"><img src="./yoke.png"><img src="./yasumi.png"><img src="./kumo.png">
+  <img src="./sigoto.png"><img src="./kazi.png"><img src="./gakkou.png"><img src="./kyuzitu.png">
+  <img src="./default-get.png"><img src="./title.png"><img src="./rule.png">
+  <img src="./heart-A.png"><img src="./heart-B.png"><img src="./volume-ON.png"><img src="./volume-OFF.png">
+  <img src="./gameover-shigoto.png"><img src="./gameover-kazi.png"><img src="./gameover-gakkou.png">
+</div>
+
 <div id="game-wrap">
   <div id="status">
     <div id="score">SCORE: 0</div>
@@ -153,7 +160,6 @@ const shareBtn = document.getElementById('share-btn');
 const closeRuleBtn = document.getElementById('close-rule-btn');
 const loadingText = document.getElementById('loading-text');
 const menuArea = document.getElementById('menu-area');
-const preloader = document.getElementById('preloader');
 const muteBtn = document.getElementById('mute-btn');
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -363,20 +369,6 @@ muteBtn.addEventListener('click', () => {
   if (audioCtx.state === 'suspended') audioCtx.resume();
 });
 
-function preloadAllImages(imageObj, callback) {
-  const urls = Object.values(imageObj); let loadedCount = 0;
-  preloader.innerHTML = '';
-  urls.forEach(url => {
-    const img = new Image();
-    img.onload = img.onerror = () => { 
-      loadedCount++; 
-      preloader.appendChild(img);
-      if (callback && loadedCount === urls.length) callback(); 
-    };
-    img.src = url;
-  });
-}
-
 function initUIAfterLoad() {
   loadingText.style.display = 'none'; 
   menuArea.style.display = 'block';
@@ -388,10 +380,9 @@ function initUIAfterLoad() {
 const loadTimeout = setTimeout(initUIAfterLoad, 1000);
 
 Promise.all([
-  new Promise(res => preloadAllImages(IMAGES, res)),
   loadAudio('./bgm.mp3').then(b => bgmBuffer = b),
   loadAudio('./get.mp3').then(b => getSoundBuffer = b)
-]).then(() => {
+]).finally(() => {
   clearTimeout(loadTimeout);
   initUIAfterLoad();
 });
@@ -403,8 +394,6 @@ startBtn.addEventListener('click', () => {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   if(state.mode === 'title') { startSequence(); } else if(state.mode === 'result') { backToTitle(); }
 });
-
-// シェア文言の修正箇所
 shareBtn.addEventListener('click', () => {
   const shareText = `「もちくまの休日ハント」で遊んだよ！\nスコアは【${state.score}】でした！\n\n#もちくまの休日ハント`;
   const shareUrl = `https://mochikumas-holiday-hunt.vercel.app/`;
