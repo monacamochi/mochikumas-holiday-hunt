@@ -200,7 +200,6 @@ function playGetSound() {
   source.start(audioCtx.currentTime);
 }
 
-// パスに ./ を追加してVercel上での認識を確実にします
 const IMAGES = {
   NORMAL: './default.png', DODGE: './yoke.png', HIT_REST: './yasumi.png', KUMO: './kumo.png',
   SIGOTO: './sigoto.png', KAZI: './kazi.png', GAKKOU: './gakkou.png', KYUZITU: './kyuzitu.png',
@@ -404,9 +403,12 @@ startBtn.addEventListener('click', () => {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   if(state.mode === 'title') { startSequence(); } else if(state.mode === 'result') { backToTitle(); }
 });
+
+// シェア文言の修正箇所
 shareBtn.addEventListener('click', () => {
-  const text = encodeURIComponent(`「もちくまの休日ハント」で遊んだよ！\nスコアは【${state.score}】でした！\n\n#もちくま #もちくまの休日ハント`);
-  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(window.location.href)}`, '_blank');
+  const shareText = `「もちくまの休日ハント」で遊んだよ！\nスコアは【${state.score}】でした！\n\n#もちくまの休日ハント`;
+  const shareUrl = `https://mochikumas-holiday-hunt.vercel.app/`;
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
 });
 </script>
 </body>
